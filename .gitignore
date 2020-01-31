@@ -20,6 +20,7 @@ ARCHIVE.bin
 zig-cache/
 tests/Output
 !tests/*.sav
-
+*.log
+logs/
 # In order to keep this file tidy, please add any personal conventions to your
 # global git configuration.
