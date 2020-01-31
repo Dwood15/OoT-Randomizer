@@ -1,17 +1,17 @@
 import argparse
-import textwrap
-import string
-import re
 import hashlib
-import math
-import sys
 import json
 import logging
+import re
+import string
+import sys
+import textwrap
 
-from version import __version__
-from Utils import random_choices, local_path
-from SettingsList import setting_infos, get_setting_info
 from Plandomizer import Distribution
+from SettingsList import setting_infos, get_setting_info
+from Utils import random_choices, local_path
+from version import __version__
+
 
 class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
 
@@ -21,8 +21,8 @@ class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
 
 # 32 characters
 letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-index_to_letter = { i: letters[i] for i in range(32) }
-letter_to_index = { v: k for k, v in index_to_letter.items() }
+index_to_letter = {i: letters[i] for i in range(32)}
+letter_to_index = {v: k for k, v in index_to_letter.items()}
 
 
 def bit_string_to_text(bits):
@@ -45,7 +45,7 @@ def text_to_bit_string(text):
     for c in text:
         index = letter_to_index[c]
         for b in range(5):
-            bits += [ (index >> b) & 1 ]
+            bits += [(index >> b) & 1]
     return bits
 
 
@@ -55,7 +55,7 @@ class Settings:
     def get_settings_display(self):
         padding = 0
         for setting in filter(lambda s: s.shared, setting_infos):
-            padding = max( len(setting.name), padding )
+            padding = max(len(setting.name), padding)
         padding += 2
         output = ''
         for setting in filter(lambda s: s.shared, setting_infos):
@@ -67,21 +67,20 @@ class Settings:
             output += name + val + '\n'
         return output
 
-
     def get_settings_string(self):
         bits = []
         for setting in filter(lambda s: s.shared and s.bitwidth > 0, setting_infos):
             value = self.__dict__[setting.name]
             i_bits = []
             if setting.type == bool:
-                i_bits = [ 1 if value else 0 ]
+                i_bits = [1 if value else 0]
             if setting.type == str:
                 try:
                     index = setting.choice_list.index(value)
                 except ValueError:
                     index = setting.choice_list.index(setting.default)
                 # https://stackoverflow.com/questions/10321978/integer-to-bitfield-as-a-list
-                i_bits = [1 if digit=='1' else 0 for digit in bin(index)[2:]]
+                i_bits = [1 if digit == '1' else 0 for digit in bin(index)[2:]]
                 i_bits.reverse()
             if setting.type == int:
                 value = int(value)
@@ -89,7 +88,7 @@ class Settings:
                 value = int(value / (setting.gui_params.get('step', 1)))
                 value = min(value, (setting.gui_params.get('max', value)))
                 # https://stackoverflow.com/questions/10321978/integer-to-bitfield-as-a-list
-                i_bits = [1 if digit=='1' else 0 for digit in bin(value)[2:]]
+                i_bits = [1 if digit == '1' else 0 for digit in bin(value)[2:]]
                 i_bits.reverse()
             if setting.type == list:
                 if len(value) > len(setting.choice_list) / 2:
@@ -99,24 +98,23 @@ class Settings:
                     terminal = [0] * setting.bitwidth
 
                 item_indexes = []
-                for item in value:                       
+                for item in value:
                     try:
                         item_indexes.append(setting.choice_list.index(item))
                     except ValueError:
                         continue
                 item_indexes.sort()
                 for index in item_indexes:
-                    item_bits = [1 if digit=='1' else 0 for digit in bin(index+1)[2:]]
+                    item_bits = [1 if digit == '1' else 0 for digit in bin(index + 1)[2:]]
                     item_bits.reverse()
-                    item_bits += [0] * ( setting.bitwidth - len(item_bits) )
+                    item_bits += [0] * (setting.bitwidth - len(item_bits))
                     i_bits.extend(item_bits)
                 i_bits.extend(terminal)
 
             # pad it
-            i_bits += [0] * ( setting.bitwidth - len(i_bits) )
+            i_bits += [0] * (setting.bitwidth - len(i_bits))
             bits += i_bits
         return bit_string_to_text(bits)
-
 
     def update_with_settings_string(self, text):
         bits = text_to_bit_string(text)
@@ -152,7 +150,7 @@ class Settings:
                         value = [item for item in setting.choice_list if item not in value]
                         break
 
-                    value.append(setting.choice_list[index-1])
+                    value.append(setting.choice_list[index - 1])
                     cur_bits = bits[:setting.bitwidth]
                     bits = bits[setting.bitwidth:]
 
@@ -161,18 +159,15 @@ class Settings:
         self.settings_string = self.get_settings_string()
         self.numeric_seed = self.get_numeric_seed()
 
-
     def get_numeric_seed(self):
         # salt seed with the settings, and hash to get a numeric seed
         distribution = json.dumps(self.distribution.to_json(include_output=False), sort_keys=True)
         full_string = self.settings_string + distribution + __version__ + self.seed
         return int(hashlib.sha256(full_string.encode('utf-8')).hexdigest(), 16)
 
-
     def sanitize_seed(self):
         # leave only alphanumeric and some punctuation
         self.seed = re.sub(r'[^a-zA-Z0-9_-]', '', self.seed, re.UNICODE)
-
 
     def update_seed(self, seed):
         if seed is None or seed == '':
@@ -182,7 +177,6 @@ class Settings:
             self.seed = seed
         self.sanitize_seed()
         self.numeric_seed = self.get_numeric_seed()
-
 
     def update(self):
         self.settings_string = self.get_settings_string()
@@ -200,7 +194,7 @@ class Settings:
                 logging.getLogger('').warning("Plandomizer enabled, but no distribution file provided.")
         elif self.distribution_file:
             logging.getLogger('').warning("Distribution file provided, but using it not enabled. "
-                    "Did you mean to set enable_distribution_file?")
+                                          "Did you mean to set enable_distribution_file?")
         else:
             self.distribution = Distribution(self)
 
@@ -212,7 +206,6 @@ class Settings:
     def check_dependency(self, setting_name, check_random=True):
         return self.get_dependency(setting_name, check_random) == None
 
-
     def get_dependency(self, setting_name, check_random=True):
         info = get_setting_info(setting_name)
         if check_random and 'randomize_key' in info.gui_params and self.__dict__[info.gui_params['randomize_key']]:
@@ -221,7 +214,6 @@ class Settings:
             return info.disabled_default if info.dependency(self) else None
         else:
             return None
-
 
     def remove_disabled(self):
         for info in setting_infos:
@@ -233,7 +225,6 @@ class Settings:
 
         self.settings_string = self.get_settings_string()
         self.numeric_seed = self.get_numeric_seed()
-
 
     def resolve_random_settings(self, cosmetic):
         sorted_infos = list(setting_infos)
@@ -248,10 +239,9 @@ class Settings:
             if self.check_dependency(info.name, check_random=True):
                 continue
 
-            if 'randomize_key' in info.gui_params and self.__dict__[info.gui_params['randomize_key']]:               
+            if 'randomize_key' in info.gui_params and self.__dict__[info.gui_params['randomize_key']]:
                 choices, weights = zip(*info.gui_params['distribution'])
                 self.__dict__[info.name] = random_choices(choices, weights=weights)[0]
-
 
     # add the settings as fields, and calculate information based on them
     def __init__(self, settings_dict):
@@ -269,7 +259,6 @@ class Settings:
         self.settings_string = self.get_settings_string()
         self.distribution = Distribution(self)
         self.update_seed(self.seed)
-
 
     def to_json(self):
         return {setting.name: self.__dict__[setting.name] for setting in setting_infos
@@ -319,5 +308,5 @@ def get_settings_from_command_line_args():
         else:
             print(settings.get_settings_string())
         sys.exit(0)
-        
+
     return settings, args.gui, args.loglevel, args.no_log

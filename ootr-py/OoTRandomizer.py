@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 import argparse
-import os
-import logging
-import random
-import textwrap
-import sys
-import time
 import datetime
+import logging
+import os
+import textwrap
+import time
 
-from Gui import guiMain
 from Main import main, from_patch_file, cosmetic_patch
-from Utils import is_bundled, close_console, check_version, VersionError, check_python_version, local_path
 from Settings import get_settings_from_command_line_args
+from Utils import local_path
+from ctypes import *
+zig_lib="../zig-cache/lib/libOoT-Randomizer.so"
 
 
 class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
@@ -21,23 +20,21 @@ class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
 
 
 def start():
-
     settings, gui, args_loglevel, no_log_file = get_settings_from_command_line_args()
-
-    if is_bundled() and len(sys.argv) == 1:
-        # for the bundled builds, if we have no arguments, the user
-        # probably wants the gui. Users of the bundled build who want the command line
-        # interface shouuld specify at least one option, possibly setting a value to a
-        # default if they like all the defaults
-        close_console()
-        guiMain()
-        sys.exit(0)
 
     # set up logger
     loglevel = {'error': logging.ERROR, 'info': logging.INFO, 'warning': logging.WARNING, 'debug': logging.DEBUG}[args_loglevel]
     logging.basicConfig(format='%(message)s', level=loglevel)
 
     logger = logging.getLogger('')
+
+    funcs = CDLL(zig_lib)
+
+    print(type(funcs))
+
+    res = funcs.add(1, 2)
+    print("add res: ")
+    print(res)
 
     if not no_log_file:
         ts = time.time()
@@ -50,16 +47,8 @@ def start():
         log_file.setFormatter(logging.Formatter('[%(asctime)s] %(message)s', datefmt='%H:%M:%S'))
         logger.addHandler(log_file)
 
-    if not settings.check_version:
-        try:
-            version_error = check_version(settings.checked_version)
-        except VersionError as e:
-            logger.warning(str(e))
-
     try:
-        if gui:
-            guiMain(settings)
-        elif settings.cosmetics_only:
+        if settings.cosmetics_only:
             cosmetic_patch(settings)
         elif settings.patch_file != '':
             from_patch_file(settings)
@@ -75,5 +64,4 @@ def start():
 
 
 if __name__ == '__main__':
-    check_python_version()
     start()
