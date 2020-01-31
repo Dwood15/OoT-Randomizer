@@ -17,6 +17,7 @@ ARCHIVE.bin
 *.spec
 .*.sw*
 
+zig-cache/
 tests/Output
 !tests/*.sav
 

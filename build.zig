@@ -2,7 +2,7 @@ const Builder = @import("std").build.Builder;
 
 pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
-    const lib = b.addStaticLibrary("OoT-Randomizer", "src/main.zig");
+    const lib = b.addSharedLibrary("OoT-Randomizer", "src/main.zig", b.version(0, 0, 1));
     lib.setBuildMode(mode);
     lib.install();
 
