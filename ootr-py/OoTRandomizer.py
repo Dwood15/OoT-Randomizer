@@ -3,6 +3,7 @@ import argparse
 import datetime
 import logging
 import os
+import sys
 import textwrap
 import time
 from ctypes import *
@@ -20,7 +21,7 @@ class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
         return textwrap.dedent(action.help)
 
 
-def start():
+def get_zig_funcs():
     zig_funcs = CDLL(zig_lib)
     print(type(zig_funcs))
 
@@ -29,8 +30,14 @@ def start():
     print(res)
     print("num_args: ")
     print(zig_funcs.num_args())
+    return zig_funcs
 
-    settings, gui, args_loglevel, no_log_file = get_settings_from_command_line_args(zig_funcs)
+def start():
+    ver = sys.hexversion
+
+    zfuncs = get_zig_funcs()
+
+    settings, gui, args_loglevel, no_log_file = get_settings_from_command_line_args(zfuncs)
 
     # set up logger
     loglevel = {'error': logging.ERROR, 'info': logging.INFO, 'warning': logging.WARNING, 'debug': logging.DEBUG}[args_loglevel]
@@ -58,12 +65,13 @@ def start():
             orig_seed = settings.seed
             for i in range(settings.count):
                 settings.update_seed(orig_seed + '-' + str(i))
-                main(settings, zig_funcs)
+                main(settings, zfuncs)
         else:
-            main(settings, zig_funcs)
+            main(settings, zfuncs)
     except Exception as ex:
         logger.exception(ex)
 
 
 if __name__ == '__main__':
+    get_zig_funcs()
     start()

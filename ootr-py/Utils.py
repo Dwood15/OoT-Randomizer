@@ -4,11 +4,9 @@ import os, os.path
 import subprocess
 import sys
 import re
-from version import __version__
 import random
 import itertools
 import bisect
-import logging
 
 def is_bundled():
     return getattr(sys, 'frozen', False)
