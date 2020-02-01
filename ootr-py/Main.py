@@ -43,7 +43,7 @@ class dummy_window():
         pass
 
 
-def main(settings, window=dummy_window()):
+def main(settings, zigfuncs, window=dummy_window()):
 
     start = time.process_time()
 
@@ -528,7 +528,7 @@ def create_playthrough(spoiler):
     collection_spheres = []
     entrance_spheres = []
     remaining_entrances = set(entrance for world in worlds for entrance in world.get_shuffled_entrances())
-    
+
     while True:
         search.checkpoint()
         # Not collecting while the generator runs means we only get one sphere at a time

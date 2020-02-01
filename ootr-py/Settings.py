@@ -266,7 +266,7 @@ class Settings:
 
 
 # gets the randomizer settings, whether to open the gui, and the logger level from command line arguments
-def get_settings_from_command_line_args():
+def get_settings_from_command_line_args(zigfuncs):
     parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--gui', help='Launch the GUI', action='store_true')
