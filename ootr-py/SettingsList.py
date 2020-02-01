@@ -77,7 +77,7 @@ class Setting_Info():
 
 class Checkbutton(Setting_Info):
 
-    def __init__(self, name, gui_text, gui_tooltip=None, disable=None, 
+    def __init__(self, name, gui_text, gui_tooltip=None, disable=None,
             disabled_default=None, default=False, shared=False, gui_params=None):
 
         choices = {
@@ -90,7 +90,7 @@ class Checkbutton(Setting_Info):
 
 class Combobox(Setting_Info):
 
-    def __init__(self, name, gui_text, choices, default, gui_tooltip=None, 
+    def __init__(self, name, gui_text, choices, default, gui_tooltip=None,
             disable=None, disabled_default=None, shared=False, gui_params=None):
 
         super().__init__(name, str, gui_text, 'Combobox', shared, choices, default, disabled_default, disable, gui_tooltip, gui_params)
@@ -99,14 +99,14 @@ class Combobox(Setting_Info):
 class Scale(Setting_Info):
 
     def __init__(self, name, gui_text, min, max, default, step=1,
-            gui_tooltip=None, disable=None, disabled_default=None, 
+            gui_tooltip=None, disable=None, disabled_default=None,
             shared=False, gui_params=None):
 
         choices = {
             i: str(i) for i in range(min, max+1, step)
         }
         if gui_params == None:
-            gui_params = {}       
+            gui_params = {}
         gui_params['min']    = min
         gui_params['max']    = max
         gui_params['step']   = step
@@ -965,136 +965,6 @@ logic_tricks = {
 
 # a list of the possible settings
 setting_infos = [
-    # Web Only Settings
-    Setting_Info(
-        name        = 'web_wad_file',   
-        type        = str, 
-        gui_text    = "WAD File", 
-        gui_type    = "Fileinput", 
-        shared      = False,
-        choices     = {},
-        gui_tooltip = "Your original OoT 1.2 NTSC-U / NTSC-J WAD file (.wad)",
-        gui_params  = {
-            "file_types": [
-                {
-                  "name": "WAD Files",
-                  "extensions": [ "wad" ]
-                },
-                {
-                  "name": "All Files",
-                  "extensions": [ "*" ]
-                }
-            ],
-            "hide_when_disabled": True,
-        }
-    ),
-    Setting_Info(
-        name        = 'web_common_key_file',   
-        type        = str, 
-        gui_text    = "Wii Common Key File", 
-        gui_type    = "Fileinput", 
-        shared      = False, 
-        choices     = {},
-        gui_tooltip = """\
-            The Wii Common Key is a copyrighted 32 character string needed for WAD encryption.
-            Google to find it! Do not ask on Discord!
-        """,
-        gui_params  = {
-            "file_types": [
-                {
-                  "name": "BIN Files",
-                  "extensions": [ "bin" ]
-                },
-                {
-                  "name": "All Files",
-                  "extensions": [ "*" ]
-                }
-            ],
-            "hide_when_disabled": True,
-        }        
-    ),
-    Setting_Info(
-        name        = 'web_common_key_string',   
-        type        = str, 
-        gui_text    = "Alternatively Enter Wii Common Key", 
-        gui_type    = "Textinput", 
-        shared      = False, 
-        choices     = {},
-        gui_tooltip = """\
-            The Wii Common Key is a copyrighted 32 character string needed for WAD encryption.
-            Google to find it! Do not ask on Discord!
-        """,
-        gui_params  = {
-            "size"               : "full",
-            "max_length"         : 32,
-            "hide_when_disabled" : True,
-        }
-    ),
-    Setting_Info(
-        name        = 'web_wad_channel_id',   
-        type        = str, 
-        gui_text    = "WAD Channel ID", 
-        gui_type    = "Textinput",
-        shared      = False,
-        choices     = {},
-        default     = "OOTE",
-        gui_tooltip = """\
-            4 characters, should end with E to ensure Dolphin compatibility.
-            Note: If you have multiple OoTR WAD files with different Channel IDs installed, the game can crash on a soft reset. Use a Title Deleter to remove old WADs.
-        """,
-        gui_params  = {
-            "size"               : "small",
-            "max_length"         : 4,
-            "no_line_break"      : True,
-            "hide_when_disabled" : True,
-        }
-    ),
-    Setting_Info(
-        name        = 'web_wad_channel_title',   
-        type        = str, 
-        gui_text    = "WAD Channel Title", 
-        gui_type    = "Textinput",
-        shared      = False,
-        choices     = {},
-        default     = "OoTRandomizer",
-        gui_tooltip = "20 characters max",
-        gui_params  = {
-            "size"               : "medium",
-            "max_length"         : 20,
-            "hide_when_disabled" : True,
-        }
-    ),
-    Setting_Info(
-        name       = 'web_output_type',   
-        type       = str, 
-        gui_text   = "Output Type", 
-        gui_type   = "Radiobutton",
-        shared     = False,
-        choices    = {
-            'z64' : ".z64 (N64/Emulator)",
-            'wad' : ".wad (WiiVC)"
-        },
-        gui_params  = {
-            "hide_when_disabled" : True,
-        },        
-        default    = "z64",
-        disable    = {
-            'z64' : {'settings' : [
-                'web_wad_file',
-                'web_common_key_file',
-                'web_common_key_string',
-                'web_wad_channel_id',
-                'web_wad_channel_title']
-            }
-        }
-    ),
-    Checkbutton(
-        name           = 'web_persist_in_cache',
-        gui_text       = 'Persist Files in Cache',
-        default        = True,
-        shared         = False,
-    ),
-    
     # Non-GUI Settings
     Checkbutton('cosmetics_only', None),
     Checkbutton('check_version', None),
@@ -1117,11 +987,11 @@ setting_infos = [
             'web:disable' : {
                 False : {
                     'settings' : [
-                        'rom','web_output_type','player_num', 
+                        'rom','web_output_type','player_num',
                         'web_wad_file', 'web_common_key_file', 'web_common_key_string',
                         'web_wad_channel_id','web_wad_channel_title'
                     ],
-                },          
+                },
             }
         },
         shared         = False,
@@ -1155,7 +1025,7 @@ setting_infos = [
                   "extensions": [ "*" ]
                 }
             ],
-            "hide_when_disabled" : True,    
+            "hide_when_disabled" : True,
         }),
     Setting_Info('checked_version',   str, None, None, False, {}),
     Setting_Info('rom',               str, "Base ROM", "Fileinput", False, {},
@@ -1188,23 +1058,23 @@ setting_infos = [
                 }
             ],
         }),
-    Setting_Info('count',             int, "Generation Count", "Numberinput", False, {}, 
+    Setting_Info('count',             int, "Generation Count", "Numberinput", False, {},
         default        = 1,
         gui_params = {
             'min' : 1,
         }
     ),
-    Setting_Info('world_count',       int, "Player Count", "Numberinput", True, {}, 
+    Setting_Info('world_count',       int, "Player Count", "Numberinput", True, {},
         default        = 1,
         gui_params = {
             'min' : 1,
             'max' : 255,
             'no_line_break'     : True,
             'web:max'           : 15,
-            'web:no_line_break' : True,            
+            'web:no_line_break' : True,
         }
     ),
-    Setting_Info('player_num',        int, "Player ID", "Numberinput", False, {}, 
+    Setting_Info('player_num',        int, "Player ID", "Numberinput", False, {},
         default        = 1,
         gui_params = {
             'min' : 1,
@@ -1222,12 +1092,12 @@ setting_infos = [
             'function' : "openOutputDir",
             'no_line_break' : True,
         }
-    ), 
+    ),
     Setting_Info('open_python_dir',   str, "Open App Directory", "Button", False, {},
         gui_params = {
             'function' : "openPythonDir",
         }
-    ), 
+    ),
     Checkbutton(
         name           = 'repatch_cosmetics',
         gui_text       = 'Update Cosmetics',
@@ -1235,7 +1105,7 @@ setting_infos = [
         disable        = {
             False : {
                 'tabs': ['cosmetics_tab','sfx_tab'],
-                'settings' : ['create_cosmetics_log'],    
+                'settings' : ['create_cosmetics_log'],
             },
         },
         shared         = False,
@@ -1331,7 +1201,7 @@ setting_infos = [
         shared         = True,
         disable        = {
             'closed' : {'settings' : ['starting_age']}
-        },        
+        },
         gui_params     = {
             'randomize_key': 'randomize_settings',
             'distribution': [
@@ -1462,7 +1332,7 @@ setting_infos = [
             True  : {'settings' : ['shuffle_ganon_bosskey']},
             False : {'settings' : ['triforce_goal_per_world']}
         },
-    ),    
+    ),
     Scale(
         name           = 'triforce_goal_per_world',
         gui_text       = 'Required Triforces Per World',
@@ -1749,7 +1619,7 @@ setting_infos = [
         ''',
         disable        = {
             True : {'settings' : ['chicken_count']}
-        },        
+        },
         shared         = True,
     ),
     Scale(
@@ -2111,7 +1981,7 @@ setting_infos = [
         default        = 'dungeon',
         choices        = {
             'remove':    'Remove (Keysy)',
-            'vanilla':   'Vanilla Locations',            
+            'vanilla':   'Vanilla Locations',
             'dungeon':   'Dungeon Only',
             'keysanity': 'Anywhere (Keysanity)'
         },
@@ -2150,7 +2020,7 @@ setting_infos = [
         default        = 'dungeon',
         choices        = {
             'remove':    'Remove (Keysy)',
-            'vanilla':   'Vanilla Locations',            
+            'vanilla':   'Vanilla Locations',
             'dungeon':   'Dungeon Only',
             'keysanity': 'Anywhere (Keysanity)',
         },
@@ -2228,7 +2098,7 @@ setting_infos = [
                 ('lacs_medallions', 1),
                 ('lacs_stones',     1),
                 ('lacs_dungeons',   1),
-            ],            
+            ],
         },
     ),
     Checkbutton(
@@ -2287,7 +2157,7 @@ setting_infos = [
         shared         = True,
     ),
     Setting_Info(
-        name           = 'disabled_locations', 
+        name           = 'disabled_locations',
         type           = list,
         gui_text       = "Exclude Locations",
         gui_type       = "SearchBox",
