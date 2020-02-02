@@ -1,6 +1,3 @@
-from Region import TimeOfDay
-
-
 class Entrance(object):
 
     def __init__(self, name='', parent=None):

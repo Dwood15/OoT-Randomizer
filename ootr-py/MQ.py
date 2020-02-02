@@ -43,10 +43,11 @@
 # the floor map data is missing a vertex pointer that would point within kaleido_scope.
 # As such, if the file moves, the patch will break.
 
-from Utils import data_path
-from Rom import Rom
 import json
 from struct import pack, unpack
+
+from Rom import Rom
+from Utils import data_path
 
 SCENE_TABLE = 0xB71440
 

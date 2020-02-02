@@ -1,10 +1,5 @@
-from version import __version__
-from collections import OrderedDict
-from Item import Item
-from Hints import gossipLocations
-import re
 import random
-import json
+from collections import OrderedDict
 
 HASH_ICONS = [
     'Deku Stick',

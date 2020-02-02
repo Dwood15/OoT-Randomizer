@@ -1,5 +1,4 @@
 import copy
-from collections import defaultdict
 import itertools
 
 from Region import TimeOfDay
@@ -92,8 +91,8 @@ class Search(object):
         raise Exception('Unimplemented for Search. Perhaps you want RewindableSearch.')
 
 
-    # Internal to the iteration. Modifies the exit_queue, regions. 
-    # Returns a queue of the exits whose access rule failed, 
+    # Internal to the iteration. Modifies the exit_queue, regions.
+    # Returns a queue of the exits whose access rule failed,
     # as a cache for the exits to try on the next iteration.
     def _expand_regions(self, exit_queue, regions, age):
         failed = []
@@ -202,7 +201,7 @@ class Search(object):
     # state to determine beatability; otherwise, only checks that the search
     # has already acquired all the Triforces.
     #
-    # The above comment was specifically for collecting the triforce. Other win 
+    # The above comment was specifically for collecting the triforce. Other win
     # conditions are possible, such as in Triforce Hunt, where only the total
     # amount of an item across all worlds matter, not specifcally who has it
     #

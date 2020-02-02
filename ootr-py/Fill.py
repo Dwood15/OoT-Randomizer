@@ -1,14 +1,12 @@
-import random
 import logging
-from State import State
-from Rules import set_shop_rules
-from Location import DisableType
-from LocationList import location_groups
-from ItemPool import songlist, get_junk_item, item_groups, remove_junk_items
-from ItemList import item_table
+import random
+
 from Item import ItemFactory
+from ItemList import item_table
+from ItemPool import remove_junk_items
+from Location import DisableType
+from Rules import set_shop_rules
 from Search import Search
-from functools import reduce
 
 logger = logging.getLogger('')
 
@@ -45,7 +43,7 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     shopitempool = [item for world in worlds for item in world.itempool if item.type == 'Shop']
     songitempool = [item for world in worlds for item in world.itempool if item.type == 'Song']
     itempool =     [item for world in worlds for item in world.itempool if item.type != 'Shop' and item.type != 'Song']
-    
+
     if worlds[0].shuffle_song_items:
         itempool.extend(songitempool)
         fill_locations.extend(song_locations)
@@ -292,7 +290,7 @@ def fill_ownworld_restrictive(window, worlds, search, locations, ownpool, itempo
                 prize_locs = list(prize_locs_dict[world.id])
                 random.shuffle(prizepool)
                 fill_restrictive(window, worlds, base_search, prize_locs, prizepool)
-                
+
                 logger.info("Placed %s items for world %s.", description, (world.id+1))
             except FillError as e:
                 logger.info("Failed to place %s items for world %s. Will retry %s more times.", description, (world.id+1), world_attempts)

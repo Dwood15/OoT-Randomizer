@@ -13,7 +13,9 @@ ACTIVATION_TO_PLAYBACK_NOTE = {
 }
 
 import random
+
 from Utils import random_choices
+
 
 # checks if one list is a sublist of the other (in either direction)
 # python is magic.....

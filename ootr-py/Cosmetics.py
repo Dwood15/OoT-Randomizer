@@ -1,10 +1,11 @@
-from version import __version__
 import random
+from collections import namedtuple
+
+import IconManip as icon
 import Music as music
 import Sounds as sfx
-import IconManip as icon
+from version import __version__
 
-from collections import namedtuple
 Color = namedtuple('Color', '  R     G     B')
 
 tunic_colors = {
@@ -133,7 +134,7 @@ def get_navi_color_options(outer=False):
     else:
         return meta_color_choices + get_navi_colors()
 
-    
+
 def get_sword_colors():
     return list(sword_colors.keys())
 
@@ -306,7 +307,7 @@ def patch_navi_colors(rom, settings, log, symbols):
             rom.write_bytes(address, color)
 
         log.navi_colors[navi_action] = [dict(
-            option1=navi_option_inner, color1=''.join(['{:02X}'.format(c) for c in inner_c]), 
+            option1=navi_option_inner, color1=''.join(['{:02X}'.format(c) for c in inner_c]),
             option2=navi_option_outer, color2=''.join(['{:02X}'.format(c) for c in outer_c]))
             for (inner_c, outer_c) in colors]
 
@@ -314,9 +315,9 @@ def patch_navi_colors(rom, settings, log, symbols):
 def patch_sword_trails(rom, settings, log, symbols):
     # patch sword trail colors
     sword_trails = [
-        ('Inner Initial Sword Trail', settings.sword_trail_color_inner, 
+        ('Inner Initial Sword Trail', settings.sword_trail_color_inner,
             [(0x00BEFF80, 0xB0, 0x40), (0x00BEFF88, 0x20, 0x00)], symbols['CFG_RAINBOW_SWORD_INNER_ENABLED']),
-        ('Outer Initial Sword Trail', settings.sword_trail_color_outer, 
+        ('Outer Initial Sword Trail', settings.sword_trail_color_outer,
             [(0x00BEFF7C, 0xB0, 0xFF), (0x00BEFF84, 0x10, 0x00)], symbols['CFG_RAINBOW_SWORD_OUTER_ENABLED']),
     ]
 
@@ -509,7 +510,7 @@ global_patch_sets = [
     patch_navi_colors,
     patch_gauntlet_colors,
     patch_sfx,
-    patch_instrument,    
+    patch_instrument,
 ]
 
 patch_sets = {
@@ -518,7 +519,7 @@ patch_sets = {
             patch_dpad,
             patch_sword_trails,
         ],
-        "symbols": {    
+        "symbols": {
             "CFG_DISPLAY_DPAD": 0x0004,
             "CFG_RAINBOW_SWORD_INNER_ENABLED": 0x0005,
             "CFG_RAINBOW_SWORD_OUTER_ENABLED": 0x0006,
@@ -529,7 +530,7 @@ patch_sets = {
             patch_dpad,
             patch_sword_trails,
         ],
-        "symbols": {    
+        "symbols": {
             "CFG_DISPLAY_DPAD": 0x0004,
             "CFG_RAINBOW_SWORD_INNER_ENABLED": 0x0005,
             "CFG_RAINBOW_SWORD_OUTER_ENABLED": 0x0006,
@@ -667,7 +668,7 @@ class CosmeticsLog(object):
         for gauntlet, options in self.gauntlet_colors.items():
             color_option_string = '{option} (#{color})'
             output += format_string.format(key=gauntlet+':', value=color_option_string.format(option=options['option'], color=options['color']), width=padding)
-            
+
         for heart, options in self.heart_colors.items():
             color_option_string = '{option} (#{color})'
             output += format_string.format(key=heart+':', value=color_option_string.format(option=options['option'], color=options['color']), width=padding)

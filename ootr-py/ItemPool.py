@@ -1,11 +1,8 @@
-from collections import namedtuple
-import logging
 import random
-from Utils import random_choices
+
 from Item import ItemFactory
 from ItemList import item_table
-from LocationList import location_groups
-
+from Utils import random_choices
 
 #This file sets the item pools for various modes. Timed modes and triforce hunt are enforced first, and then extra items are specified per mode to fill in the remaining space.
 #Some basic items that various modes require are placed here, including pendants and crystals. Medallion requirements for the two relevant entrances are also decided.
@@ -70,10 +67,10 @@ easy_items = ([
     'Progressive Scale',
     'Progressive Wallet',
     'Magic Meter',
-    'Deku Stick Capacity', 
-    'Deku Nut Capacity', 
-    'Bow', 
-    'Slingshot', 
+    'Deku Stick Capacity',
+    'Deku Nut Capacity',
+    'Bow',
+    'Slingshot',
     'Bomb Bag',
     'Double Defense'] +
     ['Heart Container'] * 16 +
@@ -92,12 +89,12 @@ item_difficulty_max = {
         'Bombchus (5)': 1,
         'Bombchus (10)': 2,
         'Bombchus (20)': 0,
-        'Magic Meter': 1, 
-        'Double Defense': 0, 
-        'Deku Stick Capacity': 1, 
-        'Deku Nut Capacity': 1, 
-        'Bow': 2, 
-        'Slingshot': 2, 
+        'Magic Meter': 1,
+        'Double Defense': 0,
+        'Deku Stick Capacity': 1,
+        'Deku Nut Capacity': 1,
+        'Bow': 2,
+        'Slingshot': 2,
         'Bomb Bag': 2,
         'Heart Container': 0,
     },
@@ -107,12 +104,12 @@ item_difficulty_max = {
         'Bombchus (10)': 0,
         'Bombchus (20)': 0,
         'Nayrus Love': 0,
-        'Magic Meter': 1, 
-        'Double Defense': 0, 
-        'Deku Stick Capacity': 0, 
-        'Deku Nut Capacity': 0, 
-        'Bow': 1, 
-        'Slingshot': 1, 
+        'Magic Meter': 1,
+        'Double Defense': 0,
+        'Deku Stick Capacity': 0,
+        'Deku Nut Capacity': 0,
+        'Bow': 1,
+        'Slingshot': 1,
         'Bomb Bag': 1,
         'Heart Container': 0,
         'Piece of Heart': 0,
@@ -515,7 +512,7 @@ vanillaBK = {
     'Shadow Temple MQ Boss Key Chest': 'Boss Key (Shadow Temple)',
     'Spirit Temple MQ Boss Key Chest': 'Boss Key (Spirit Temple)',
     'Water Temple MQ Boss Key Chest': 'Boss Key (Water Temple)',
-    'Forest Temple MQ Boss Key Chest': 'Boss Key (Forest Temple)',    
+    'Forest Temple MQ Boss Key Chest': 'Boss Key (Forest Temple)',
 }
 
 vanillaMC = {
@@ -642,7 +639,7 @@ vanillaSK = {
     'Spirit Temple MQ Mirror Puzzle Invisible Chest': 'Small Key (Spirit Temple)',
     'Spirit Temple MQ Silver Block Hallway Chest': 'Small Key (Spirit Temple)',
     'Water Temple MQ Central Pillar Chest': 'Small Key (Water Temple)',
-    'Water Temple MQ Freestanding Key': 'Small Key (Water Temple)',    
+    'Water Temple MQ Freestanding Key': 'Small Key (Water Temple)',
 }
 
 junk_pool_base = [
@@ -728,7 +725,7 @@ def replace_max_item(items, item, max):
 
 def generate_itempool(world):
     junk_pool[:] = list(junk_pool_base)
-    if world.junk_ice_traps == 'on': 
+    if world.junk_ice_traps == 'on':
         junk_pool.append(('Ice Trap', 10))
     elif world.junk_ice_traps in ['mayhem', 'onslaught']:
         junk_pool[:] = [('Ice Trap', 1)]
@@ -1086,7 +1083,7 @@ def get_pool_core(world):
         placed_items.update(vanilla_deku_scrubs)
 
     pool.extend(alwaysitems)
-    
+
     if world.dungeon_mq['Deku Tree']:
         pool.extend(DT_MQ)
     else:
@@ -1142,7 +1139,7 @@ def get_pool_core(world):
     pool.extend(songlist)
     if world.free_scarecrow:
         world.state.collect(ItemFactory('Scarecrow Song'))
-    
+
     if world.no_epona_race:
         world.state.collect(ItemFactory('Epona', event=True))
 
@@ -1219,7 +1216,7 @@ def get_pool_core(world):
     if not world.shuffle_kokiri_sword:
         replace_max_item(pool, 'Kokiri Sword', 0)
 
-    if world.junk_ice_traps == 'off': 
+    if world.junk_ice_traps == 'off':
         replace_max_item(pool, 'Ice Trap', 0)
     elif world.junk_ice_traps == 'onslaught':
         for item in [item for item, weight in junk_pool_base] + ['Recovery Heart', 'Bombs (20)', 'Arrows (30)']:

@@ -24,8 +24,8 @@
 # hook would contain a bunch of addresses, whether they share the same default
 # value or not.
 
-from enum import Enum
 from collections import namedtuple
+from enum import Enum
 
 
 class Tags(Enum):
@@ -99,9 +99,9 @@ class Sounds(Enum):
     INGO_WOOAH         = Sound(0x6854, 'ingo-wooah',            'Ingo "Wooah!"',             [Tags.PAINFUL])
     IRON_BOOTS         = Sound(0x080D, 'iron-boots',            'Iron Boots',                [Tags.BRIEF, Tags.HPLOW, Tags.QUIET])
     IRON_KNUCKLE       = Sound(0x3929, 'iron-knuckle',          'Iron Knuckle',              [])
-    INGO_KAAH          = Sound(0x6855, 'kaah',                  'Kaah!',                     [Tags.PAINFUL]) 
-    MOBLIN_CLUB_GROUND = Sound(0x38E1, 'moblin-club-ground',    'Moblin Club Ground',        [Tags.PAINFUL]) 
-    MOBLIN_CLUB_SWING  = Sound(0x39EF, 'moblin-club-swing',     'Moblin Club Swing',         [Tags.PAINFUL]) 
+    INGO_KAAH          = Sound(0x6855, 'kaah',                  'Kaah!',                     [Tags.PAINFUL])
+    MOBLIN_CLUB_GROUND = Sound(0x38E1, 'moblin-club-ground',    'Moblin Club Ground',        [Tags.PAINFUL])
+    MOBLIN_CLUB_SWING  = Sound(0x39EF, 'moblin-club-swing',     'Moblin Club Swing',         [Tags.PAINFUL])
     MOO                = Sound(0x28DF, 'moo',                   'Moo',                       [Tags.NAVI, Tags.NIGHTFALL, Tags.HORSE, Tags.HPLOW])
     MWEEP              = Sound(0x687A, 'mweep',                 'Mweep!',                    [Tags.BRIEF, Tags.NAVI, Tags.MENUMOVE, Tags.MENUSELECT, Tags.NIGHTFALL, Tags.HPLOW, Tags.HORSE, Tags.HOVERBOOT])
     NAVI_HELLO         = Sound(0x6844, 'navi-hello',            'Navi "Hello!"',             [Tags.PAINFUL, Tags.NAVI])

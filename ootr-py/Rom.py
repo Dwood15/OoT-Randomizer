@@ -1,16 +1,14 @@
-import io
-import itertools
 import json
-import logging
+import copy
+import json
 import os
 import platform
 import struct
 import subprocess
-import random
-import copy
-from Utils import is_bundled, subprocess_args, local_path, data_path, default_output_path, get_version_bytes
-from ntype import BigStream, uint32
+
+from Utils import is_bundled, subprocess_args, local_path, data_path, get_version_bytes
 from crc import calculate_crc
+from ntype import BigStream
 from version import __version__
 
 DMADATA_START = 0x7430

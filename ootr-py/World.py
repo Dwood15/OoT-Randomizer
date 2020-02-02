@@ -2,29 +2,37 @@ import copy
 import logging
 import random
 
-from DungeonList import create_dungeons
 from Entrance import Entrance
 from HintList import getRequiredHints
 from Hints import get_hint_area
-from Item import Item, ItemFactory, MakeEventItem
+from Item import ItemFactory, MakeEventItem
 from Location import Location, LocationFactory
 from LocationList import business_scrubs
 from Region import Region, TimeOfDay
-from Rules import set_rules, set_shop_rules
 from RuleParser import Rule_AST_Transformer
 from SettingsList import get_setting_info, get_settings_from_section
 from State import State
 from Utils import read_json
 
+
 class World(object):
 
     def __init__(self, id, settings):
         self.id = id
+
+        self.chicken_count_random = None
+        self.randomized_list = []
+        self.randomize_settings = ""
         self.shuffle = 'vanilla'
+        self.shuffle_smallkeys = ""
+        self.shuffle_ganon_bosskey = False
+        self.entrance_shuffle = None
         self.dungeons = []
         self.regions = []
         self.itempool = []
         self.state = State(self)
+
+        #cache information
         self._cached_locations = None
         self._entrance_cache = {}
         self._region_cache = {}
@@ -48,10 +56,11 @@ class World(object):
         if self.open_forest == 'closed' and self.entrance_shuffle in ['all-indoors', 'all']:
             self.open_forest = 'closed_deku'
 
+
         # rename a few attributes...
         self.keysanity = self.shuffle_smallkeys in ['keysanity', 'remove']
         self.check_beatable_only = not self.all_reachable
-    
+
         self.shuffle_dungeon_entrances = self.entrance_shuffle != 'off'
         self.shuffle_grotto_entrances = self.entrance_shuffle in ['simple-indoors', 'all-indoors', 'all']
         self.shuffle_interior_entrances = self.entrance_shuffle in ['simple-indoors', 'all-indoors', 'all']
@@ -105,7 +114,6 @@ class World(object):
 
         self.always_hints = [hint.name for hint in getRequiredHints(self)]
 
-
     def copy(self):
         new_world = World(self.id, self.settings)
         new_world.skipped_trials = copy.copy(self.skipped_trials)
@@ -138,10 +146,8 @@ class World(object):
 
         return new_world
 
-
     def resolve_random_settings(self):
         # evaluate settings (important for logic, nice for spoiler)
-        self.randomized_list = []
         if self.randomize_settings:
             setting_info = get_setting_info('randomize_settings')
             self.randomized_list.extend(setting_info.disable[True]['settings'])
@@ -192,10 +198,9 @@ class World(object):
 
         self.distribution.configure_randomized_settings(self)
 
-
     def load_regions_from_json(self, file_path):
         region_json = read_json(file_path)
-            
+
         for region in region_json:
             new_region = Region(region['region_name'])
             new_region.world = self
@@ -240,11 +245,9 @@ class World(object):
                     new_region.exits.append(new_exit)
             self.regions.append(new_region)
 
-
     def create_internal_locations(self):
         self.parser.create_delayed_rules()
         assert self.parser.events <= self.event_items, 'Parse error: undefined items %r' % (self.parser.events - self.event_items)
-
 
     def initialize_entrances(self):
         for region in self.regions:
@@ -252,13 +255,11 @@ class World(object):
                 exit.connect(self.get_region(exit.connected_region))
                 exit.world = self
 
-
     def initialize_regions(self):
         for region in self.regions:
             region.world = self
             for location in region.locations:
                 location.world = self
-
 
     def initialize_items(self):
         for item in self.itempool:
@@ -270,13 +271,12 @@ class World(object):
         for item in [item for dungeon in self.dungeons for item in dungeon.all_items]:
             item.world = self
 
-
     def random_shop_prices(self):
         shop_item_indexes = ['7', '5', '8', '6']
         self.shop_prices = {}
         for region in self.regions:
             if self.shopsanity == 'random':
-                shop_item_count = random.randint(0,4)
+                shop_item_count = random.randint(0, 4)
             else:
                 shop_item_count = int(self.shopsanity)
 
@@ -284,7 +284,6 @@ class World(object):
                 if location.type == 'Shop':
                     if location.name[-1:] in shop_item_indexes[:shop_item_count]:
                         self.shop_prices[location.name] = int(random.betavariate(1.5, 2) * 60) * 5
-
 
     def set_scrub_prices(self):
         # Get Deku Scrub Locations
@@ -313,7 +312,6 @@ class World(object):
                     if location.item is not None:
                         location.item.price = price
 
-
     rewardlist = (
         'Kokiri Emerald',
         'Goron Ruby',
@@ -336,6 +334,7 @@ class World(object):
         'Twinrova',
         'Links Pocket'
     )
+
     def fill_bosses(self, bossCount=9):
         boss_rewards = ItemFactory(self.rewardlist, self)
         boss_locations = [self.get_location(loc) for loc in self.boss_location_names]
@@ -356,7 +355,6 @@ class World(object):
             loc = prize_locs.pop()
             self.push_item(loc, item)
 
-
     def get_region(self, regionname):
         if isinstance(regionname, Region):
             return regionname
@@ -368,7 +366,6 @@ class World(object):
                     self._region_cache[regionname] = region
                     return region
             raise KeyError('No such region %s' % regionname)
-
 
     def get_entrance(self, entrance):
         if isinstance(entrance, Entrance):
@@ -383,7 +380,6 @@ class World(object):
                         return exit
             raise KeyError('No such entrance %s' % entrance)
 
-
     def get_location(self, location):
         if isinstance(location, Location):
             return location
@@ -397,14 +393,11 @@ class World(object):
                         return r_location
         raise KeyError('No such location %s' % location)
 
-
     def get_items(self):
         return [loc.item for loc in self.get_filled_locations()] + self.itempool
 
-
     def get_itempool_with_dungeon_items(self):
         return self.get_restricted_dungeon_items() + self.get_unrestricted_dungeon_items() + self.itempool
-
 
     # get a list of items that should stay in their proper dungeon
     def get_restricted_dungeon_items(self):
@@ -422,7 +415,6 @@ class World(object):
             item.world = self
         return itempool
 
-
     # get a list of items that don't have to be in their proper dungeon
     def get_unrestricted_dungeon_items(self):
         itempool = []
@@ -439,10 +431,8 @@ class World(object):
             item.world = self
         return itempool
 
-
     def find_items(self, item):
         return [location for location in self.get_locations() if location.item is not None and location.item.name == item]
-
 
     def push_item(self, location, item, manual=False):
         if not isinstance(location, Location):
@@ -455,10 +445,10 @@ class World(object):
             item.price = location.price if location.price is not None else item.price
             location.price = item.price
 
-            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world.id if hasattr(item, 'world') else -1, location, location.world.id if hasattr(location, 'world') else -1)
+            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world.id if hasattr(item, 'world') else -1, location,
+                                        location.world.id if hasattr(location, 'world') else -1)
         else:
             raise RuntimeError('Cannot assign item %s to location %s.' % (item, location))
-
 
     def get_locations(self):
         if self._cached_locations is None:
@@ -467,30 +457,23 @@ class World(object):
                 self._cached_locations.extend(region.locations)
         return self._cached_locations
 
-
     def get_unfilled_locations(self):
         return filter(Location.has_no_item, self.get_locations())
-
 
     def get_filled_locations(self):
         return filter(Location.has_item, self.get_locations())
 
-
     def get_progression_locations(self):
         return filter(Location.has_progression_item, self.get_locations())
-
 
     def get_entrances(self):
         return [entrance for region in self.regions for entrance in region.entrances]
 
-
     def get_shuffled_entrances(self, type=None):
         return [entrance for entrance in self.get_entrances() if entrance.shuffled and (type == None or entrance.type == type)]
 
-
     def has_beaten_game(self, state):
         return state.has('Triforce')
-
 
     # Useless areas are areas that have contain no items that could ever
     # be used to complete the seed. Unfortunately this is very difficult
@@ -498,7 +481,7 @@ class World(object):
     # set collected to know this. To simplify this we instead just get areas
     # that don't have any items that could ever be required in any seed.
     # We further cull this list with woth info. This is an overestimate of
-    # the true list of possible useless areas, but this will generate a 
+    # the true list of possible useless areas, but this will generate a
     # reasonably sized list of areas that fit this property.
     def update_useless_areas(self, spoiler):
         areas = {}
@@ -512,9 +495,9 @@ class World(object):
             # way of doing this, but it's the only way to allow dungeons to appear.
             # So barren hints do not include these dungeon rewards.
             if location_hint in excluded_areas or \
-               location.locked or \
-               location.item is None or \
-               location.item.type in ('Event', 'DungeonReward'):
+                    location.locked or \
+                    location.item is None or \
+                    location.item.type in ('Event', 'DungeonReward'):
                 continue
 
             area = location_hint
@@ -527,7 +510,7 @@ class World(object):
             areas[area]['locations'].append(location)
 
         # Generate area list meta data
-        for area,area_info in areas.items():
+        for area, area_info in areas.items():
             # whether an area is a dungeon is calculated to prevent too many
             # dungeon barren hints since they are quite powerful. The area
             # names don't quite match the internal dungeon names so we need to
@@ -548,8 +531,8 @@ class World(object):
             'Ice Arrows',
             'Biggoron Sword',
         ]
-        if (self.damage_multiplier != 'ohko' and self.damage_multiplier != 'quadruple' and 
-            self.shuffle_scrubs == 'off' and not self.shuffle_grotto_entrances):
+        if (self.damage_multiplier != 'ohko' and self.damage_multiplier != 'quadruple' and
+                self.shuffle_scrubs == 'off' and not self.shuffle_grotto_entrances):
             # nayru's love may be required to prevent forced damage
             exclude_item_list.append('Nayrus Love')
         if self.logic_grottos_without_agony and self.hints != 'agony':
@@ -593,7 +576,7 @@ class World(object):
         # generate the empty area list
         self.empty_areas = {}
 
-        for area,area_info in areas.items():
+        for area, area_info in areas.items():
             useless_area = True
             for location in area_info['locations']:
                 world_id = location.item.world.id

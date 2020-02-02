@@ -1,10 +1,10 @@
 # Run unittests with python -m unittest Unittest[.ClassName[.test_func]]
 
-from collections import Counter, defaultdict
 import json
 import logging
 import os
 import unittest
+from collections import Counter, defaultdict
 
 from ItemList import item_table
 from ItemPool import remove_junk_items

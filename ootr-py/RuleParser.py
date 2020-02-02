@@ -1,8 +1,6 @@
 import ast
-from collections import defaultdict
-from inspect import signature, _ParameterKind
-import logging
 import re
+from collections import defaultdict
 
 from Item import MakeEventItem
 from ItemList import item_table
@@ -10,7 +8,6 @@ from Location import Location
 from Region import TimeOfDay
 from State import State
 from Utils import data_path, read_json
-
 
 escaped_items = {}
 for item in item_table:

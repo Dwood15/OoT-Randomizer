@@ -1,8 +1,7 @@
 #Much of this is heavily inspired from and/or based on az64's / Deathbasket's MM randomizer
 
-import random
 import os
-
+import random
 
 # Format: (Title, Sequence ID)
 bgm_sequence_ids = [

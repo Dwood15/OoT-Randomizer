@@ -1,12 +1,9 @@
-from collections import Counter, defaultdict
 import copy
-from functools import partial
 import itertools
+from collections import Counter
 
 from Item import ItemInfo
 from Search import Search
-from Region import Region, TimeOfDay
-
 
 
 class State(object):

@@ -1,13 +1,13 @@
-import random
 import logging
-from Fill import ShuffleError
+import random
 from collections import OrderedDict
-from Search import Search
+
+from Fill import ShuffleError
+from Item import ItemFactory
 from Region import TimeOfDay
 from Rules import set_entrances_based_rules
-from Entrance import Entrance
+from Search import Search
 from State import State
-from Item import ItemFactory
 
 
 def get_entrance_pool(type):
@@ -534,7 +534,7 @@ def validate_worlds(worlds, entrance_placed, locations_to_ensure_reachable, item
 
     if locations_to_ensure_reachable:
         max_search = Search.max_explore([world.state for world in worlds], itempool)
-        # If ALR is enabled, ensure all locations we want to keep reachable are indeed still reachable 
+        # If ALR is enabled, ensure all locations we want to keep reachable are indeed still reachable
         # Otherwise, just continue if the game is still beatable
         if not (worlds[0].check_beatable_only and max_search.can_beat_game(False)):
             max_search.visit_locations(locations_to_ensure_reachable)

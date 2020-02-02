@@ -1,37 +1,35 @@
-from collections import OrderedDict
+import copy
+import hashlib
 import logging
+import os
+import os.path
 import platform
 import random
+import struct
 import subprocess
 import time
-import os, os.path
-import sys
-import struct
 import zipfile
-import io
-import hashlib
-import copy
+from collections import OrderedDict
 
-from World import World
-from State import State
-from Spoiler import Spoiler
-from Rom import Rom
-from Patches import patch_rom
 from Cosmetics import patch_cosmetics
 from DungeonList import create_dungeons
+from EntranceShuffle import set_entrances
 from Fill import distribute_items_restrictive, ShuffleError
+from Hints import buildGossipHints
 from Item import Item
 from ItemPool import generate_itempool
-from Hints import buildGossipHints
-from Utils import default_output_path, is_bundled, subprocess_args, data_path
-from version import __version__
-from N64Patch import create_patch_file, apply_patch_file
-from SettingsList import setting_infos, logic_tricks
-from Rules import set_rules, set_shop_rules
-from Plandomizer import Distribution
-from Search import Search, RewindableSearch
-from EntranceShuffle import set_entrances
 from LocationList import set_drop_location_names
+from N64Patch import create_patch_file, apply_patch_file
+from Patches import patch_rom
+from Rom import Rom
+from Rules import set_rules, set_shop_rules
+from Search import Search, RewindableSearch
+from SettingsList import logic_tricks
+from Spoiler import Spoiler
+from State import State
+from Utils import default_output_path, is_bundled, subprocess_args, data_path
+from World import World
+from version import __version__
 
 
 class dummy_window():
@@ -48,8 +46,6 @@ def main(settings, zigfuncs, window=dummy_window()):
     start = time.process_time()
 
     logger = logging.getLogger('')
-
-    worlds = []
 
     old_tricks = settings.allowed_tricks
     settings.load_distribution()

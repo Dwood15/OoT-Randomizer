@@ -1,5 +1,5 @@
-import collections
 import logging
+
 from Location import DisableType
 from Search import Search
 from State import State
@@ -18,8 +18,8 @@ def set_rules(world):
         if not world.shuffle_song_items:
             if location.type == 'Song':
                 # allow junk items, but songs must still have matching world
-                add_item_rule(location, lambda location, item: 
-                    ((location.world.distribution.song_as_items or world.start_with_fast_travel) 
+                add_item_rule(location, lambda location, item:
+                    ((location.world.distribution.song_as_items or world.start_with_fast_travel)
                         and item.type != 'Song')
                     or (item.type == 'Song' and item.world.id == location.world.id))
             else:

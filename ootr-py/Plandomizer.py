@@ -1,23 +1,20 @@
 import itertools
 import json
-import logging
-import re
 import random
-
 from functools import reduce
 
-from Fill import FillError
 from EntranceShuffle import EntranceShuffleError, change_connections, confirm_replacement, validate_worlds
+from Fill import FillError
 from Hints import gossipLocations, GossipText
 from Item import ItemFactory, ItemIterator, IsItem
 from ItemPool import item_groups, get_junk_item
-from Location import LocationIterator, LocationFactory, IsLocation
+from JSONDump import dump_obj, CollapseList, CollapseDict, AllignedDict, SortedDict
+from Location import LocationIterator, LocationFactory
 from LocationList import location_groups
 from Search import Search
 from Spoiler import HASH_ICONS
-from version import __version__
 from Utils import random_choices
-from JSONDump import dump_obj, CollapseList, CollapseDict, AllignedDict, SortedDict
+from version import __version__
 
 
 class InvalidFileException(Exception):
@@ -247,7 +244,7 @@ class WorldDistribution(object):
 
     def to_json(self):
         return {
-            'randomized_settings': self.randomized_settings,      
+            'randomized_settings': self.randomized_settings,
             'starting_items': SortedDict({name: record.to_json() for (name, record) in self.starting_items.items()}),
             'dungeons': {name: record.to_json() for (name, record) in self.dungeons.items()},
             'trials': {name: record.to_json() for (name, record) in self.trials.items()},
@@ -469,10 +466,10 @@ class WorldDistribution(object):
 
                 target_region = record.region
 
-                matched_targets_to_region = list(filter(lambda target: target.connected_region and target.connected_region.name == target_region, 
+                matched_targets_to_region = list(filter(lambda target: target.connected_region and target.connected_region.name == target_region,
                                                         target_entrance_pools[pool_type]))
                 if not matched_targets_to_region:
-                    raise RuntimeError('No entrance found to replace with %s that leads to %s in world %d' % 
+                    raise RuntimeError('No entrance found to replace with %s that leads to %s in world %d' %
                                                 (matched_entrance, target_region, self.id + 1))
 
                 if matched_entrance.type in ['Overworld', 'OwlDrop']:
@@ -480,14 +477,14 @@ class WorldDistribution(object):
                     try:
                         matched_target = next(filter(lambda target: target.replaces.parent_region.name == target_parent, matched_targets_to_region))
                     except StopIteration:
-                        raise RuntimeError('No entrance found to replace with %s that leads to %s from %s in world %d' % 
+                        raise RuntimeError('No entrance found to replace with %s that leads to %s from %s in world %d' %
                                                 (matched_entrance, target_region, target_parent, self.id + 1))
                 else:
                     matched_target = matched_targets_to_region[0]
                     target_parent = matched_target.parent_region.name
 
                 if matched_target.connected_region == None:
-                    raise RuntimeError('Entrance leading to %s from %s is already shuffled in world %d' % 
+                    raise RuntimeError('Entrance leading to %s from %s is already shuffled in world %d' %
                                             (target_region, target_parent, self.id + 1))
 
                 change_connections(matched_entrance, matched_target)
@@ -495,7 +492,7 @@ class WorldDistribution(object):
                 try:
                     validate_worlds(worlds, None, locations_to_ensure_reachable, itempool)
                 except EntranceShuffleError as error:
-                    raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' % 
+                    raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' %
                                             (matched_entrance, matched_entrance.connected_region, self.id + 1, error))
 
                 confirm_replacement(matched_entrance, matched_target)

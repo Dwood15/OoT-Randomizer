@@ -1,6 +1,7 @@
 # text details: https://wiki.cloudmodding.com/oot/Text_Format
 
 import random
+
 from TextBox import line_wrap
 
 TABLE_START = 0xB849EC
@@ -443,7 +444,7 @@ class Message():
         size = (size + 3) & -4 # align to nearest 4 bytes
 
         return size
-    
+
     # applies whatever transformations we want to the dialogs
     def transform(self, replace_ending=False, ending=None, always_allow_skip=True, speed_up_text=True):
 
@@ -486,7 +487,7 @@ class Message():
 
         self.text_codes = text_codes
 
-        
+
     # writes a Message back into the rom, using the given index and offset to update the table
     # returns the offset of the next message
     def write(self, rom, index, offset):

@@ -1,9 +1,9 @@
-from SettingsList import setting_infos, setting_map, get_setting_info, get_settings_from_section, get_settings_from_tab
-from Utils import data_path
-import sys
-import json
 import copy
+import json
+import sys
 
+from SettingsList import setting_map, get_setting_info, get_settings_from_section, get_settings_from_tab
+from Utils import data_path
 
 tab_keys     = ['text', 'app_type', 'footer']
 section_keys = ['text', 'is_colors', 'is_sfx', 'col_span', 'row_span', 'subheader']
@@ -218,7 +218,7 @@ def CreateJSON(path, web_version=False):
     with open(path, 'w') as f:
         json.dump(settingOutputJson, f)
 
- 
+
 def settingToJsonMain():
     web_version = '--web' in sys.argv
     CreateJSON(data_path('generated/settings_list.json'), web_version)

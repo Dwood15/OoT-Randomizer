@@ -1,6 +1,6 @@
-from LocationList import location_table
-from Region import TimeOfDay
 from enum import Enum
+
+from LocationList import location_table
 
 
 class Location(object):
@@ -61,7 +61,7 @@ class Location(object):
         if self.minor_only and item.majoritem:
             return False
         return (
-            not self.is_disabled() and 
+            not self.is_disabled() and
             self.can_fill_fast(item) and
             (not check_access or state.search.spot_access(self, 'either')))
 

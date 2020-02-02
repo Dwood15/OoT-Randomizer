@@ -1,12 +1,14 @@
+import bisect
 import io
+import itertools
 import json
-import os, os.path
+import os
+import os.path
+import random
+import re
 import subprocess
 import sys
-import re
-import random
-import itertools
-import bisect
+
 
 def is_bundled():
     return getattr(sys, 'frozen', False)
