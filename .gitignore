@@ -20,5 +20,9 @@ ARCHIVE.bin
 tests/Output
 !tests/*.sav
 
+.idea/
+cmake-build-debug/
+
+
 # In order to keep this file tidy, please add any personal conventions to your
 # global git configuration.
