@@ -323,3 +323,6 @@ item_table = {
                                                 'item_id':    0x6B,
                                             }),
 }
+
+def get_major_items():
+    return [item for (item, data) in item_table.items() if data[0] == 'Item' and data[1] and data[2] is not None]
