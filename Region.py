@@ -63,7 +63,7 @@ class Region(object):
             return item.world.id == self.world.id
 
         # standard items don't need crazy checks
-        if not item.is_dungeonitem or item.type == 'FortressSmallKey':
+        if manual or not item.is_dungeonitem or item.type == 'FortressSmallKey':
             return True
 
         is_dungeon_restricted = False
@@ -74,13 +74,14 @@ class Region(object):
             is_dungeon_restricted = self.world.shuffle_smallkeys in ['dungeon', 'vanilla']
         elif item.is_bosskey and not item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_bosskeys in ['dungeon', 'vanilla']
-        elif item.bosskey and item.name.endswith('(Ganons Castle)'):
+        elif item.is_bosskey and item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
-        if is_dungeon_restricted and not manual:
-            return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world.id == self.world.id
+        if not is_dungeon_restricted:
+            return True
 
-        return True
+        return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world.id == self.world.id
+
 
 
     def __str__(self):
