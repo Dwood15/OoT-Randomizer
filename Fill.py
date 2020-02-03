@@ -73,9 +73,9 @@ class PoolHolder:
                 self.base_locations.append(location)
 
     def place_shop_locations(self, window, worlds):
-        search = Search(self.state_list)
-        fill_ownworld_restrictive(window, worlds, search, self.shop_locations, self.shop_itempool, self.base_itempool + self.song_itempool + self.dungeon_items, "shop")
-        search.collect_locations()
+        self.search = Search(self.state_list)
+        fill_ownworld_restrictive(window, worlds, self.search, self.shop_locations, self.shop_itempool, self.base_itempool + self.song_itempool + self.dungeon_items, "shop")
+        self.search.collect_locations()
 
     def cloakable_locations(self):
         return self.shop_locations + self.song_locations + self.base_locations
@@ -118,7 +118,7 @@ def distribute_items_restrictive(window, worlds: List[World]):
     for world in worlds:
         all_pools.append_world(world)
 
-    window.locationcount = all_pools.location_count
+    window.locationcount = all_pools.location_count()
     window.fillcount = 0
 
     # randomize item placement order. this ordering greatly affects location-accessibility bias
@@ -174,7 +174,8 @@ def distribute_items_restrictive(window, worlds: List[World]):
         ice_trap.looks_like_item = random_item
 
     itmpools = [all_pools.shop_itempool, all_pools.dungeon_items, all_pools.song_itempool, prog_itm_pool, prio_itm_pool, rem_itm_pool]
-    worlds[0].settings.distribution.fill(window, worlds, all_pools.location_pools, itmpools)
+
+    worlds[0].settings.distribution.fill(window, worlds, all_pools.location_pools(), itmpools)
     all_pools.base_itempool = prog_itm_pool + prio_itm_pool + rem_itm_pool
 
 
@@ -198,7 +199,7 @@ def distribute_items_restrictive(window, worlds: List[World]):
     if all_pools.dungeon_items:
         logger.info('Placing dungeon items.')
         all_pools.search = Search(all_pools.state_list)
-        all_pools.fill_dungeons_restrictive(window, worlds, all_pools.search, all_pools.base_locations, all_pools.dungeon_items, all_pools.base_itempool + all_pools.song_itempool)
+        fill_dungeons_restrictive(window, worlds, all_pools.search, all_pools.base_locations, all_pools.dungeon_items, all_pools.base_itempool + all_pools.song_itempool)
         all_pools.search.collect_locations()
 
 
@@ -256,7 +257,7 @@ def distribute_items_restrictive(window, worlds: List[World]):
     if not all_pools.search.can_beat_game():
         raise FillError('Cannot beat game!')
 
-    worlds[0].settings.distribution.cloak(worlds, [all_pools.cloakable_locations()], [all_pools.models])
+    worlds[0].settings.distribution.cloak(worlds, [all_pools.cloakable_locations()], [all_pools.models()])
 
     for world in worlds:
         for location in world.get_filled_locations():
@@ -413,6 +414,7 @@ def fill_restrictive(window, worlds, base_search, locations, base_itempool, coun
         max_search = items_search.copy()
         max_search.collect_locations()
 
+        can_reach = False
         # perform_access_check checks location reachability
         perform_access_check = True
         if worlds[0].check_beatable_only:
@@ -428,40 +430,42 @@ def fill_restrictive(window, worlds, base_search, locations, base_itempool, coun
         # in the world we are placing it (possibly checking for reachability)
         spot_to_fill = None
         for location in l2cations:
-            if location.can_fill(max_search.state_list[location.world.id], item_to_place, perform_access_check):
-                # for multiworld, make it so that the location is also reachable
-                # in the world the item is for. This is to prevent early restrictions
-                # in one world being placed late in another world. If this is not
-                # done then one player may be waiting a long time for other players.
-                if location.world.id != item_to_place.world.id:
-                    try:
-                        source_location = item_to_place.world.get_location(location.name)
-                        if not source_location.can_fill(max_search.state_list[item_to_place.world.id], item_to_place, perform_access_check):
-                            # location wasn't reachable in item's world, so skip it
-                            continue
-                    except KeyError:
-                        # This location doesn't exist in the other world, let's look elsewhere.
-                        # Check access to whatever parent region exists in the other world.
-                        can_reach = True
-                        parent_region = location.parent_region
-                        while parent_region:
-                            try:
-                                source_region = item_to_place.world.get_region(parent_region.name)
-                                can_reach = max_search.can_reach(source_region)
-                                break
-                            except KeyError:
-                                parent_region = parent_region.entrances[0].parent_region
-                        if not can_reach:
-                            continue
-
-                if location.disabled == DisableType.PENDING:
-                    if not max_search.can_beat_game(False):
+            if not location.can_fill(max_search.state_list[location.world.id], item_to_place, perform_access_check):
+                continue
+            # for multiworld, make it so that the location is also reachable
+            # in the world the item is for. This is to prevent early restrictions
+            # in one world being placed late in another world. If this is not
+            # done then one player may be waiting a long time for other players.
+            if location.world.id != item_to_place.world.id:
+                try:
+                    source_location = item_to_place.world.get_location(location.name)
+                    if not source_location.can_fill(max_search.state_list[item_to_place.world.id], item_to_place, perform_access_check):
+                        # location wasn't reachable in item's world, so skip it
                         continue
-                    location.disabled = DisableType.DISABLED
+                except KeyError:
+                    # This location doesn't exist in the other world, let's look elsewhere.
+                    # Check access to whatever parent region exists in the other world.
+                    parent_region = location.parent_region
+                    while parent_region:
+                        try:
+                            source_region = item_to_place.world.get_region(parent_region.name)
+                            can_reach = max_search.can_reach(source_region)
+                            break
+                        except KeyError:
+                            parent_region = parent_region.entrances[0].parent_region
+                    if not can_reach:
+                        can_reach = True
 
-                # location is reachable (and reachable in item's world), so place item here
-                spot_to_fill = location
-                break
+                        continue
+
+            if location.disabled == DisableType.PENDING:
+                if not max_search.can_beat_game(False):
+                    continue
+                location.disabled = DisableType.DISABLED
+
+            # location is reachable (and reachable in item's world), so place item here
+            spot_to_fill = location
+            break
 
         # if we failed to find a suitable location
         if spot_to_fill is None:
