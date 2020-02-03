@@ -429,9 +429,9 @@ class World(object):
             is_ganons: bool = dungeon.name == 'Ganons Castle'
 
             for item in dungeon.all_items:
-                if mc_shuffle and (item.is_compass or item.is_map ):
+                if item.is_smallkey and sk_shuffle:
                     itempool.append(item)
-                elif item.smallkey and sk_shuffle:
+                elif mc_shuffle and (item.is_compass or item.is_map ):
                     itempool.append(item)
                 elif is_ganons and gk_shuffle or not is_ganons and bk_shuffle:
                     itempool.append(item)

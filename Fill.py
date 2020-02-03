@@ -29,6 +29,7 @@ class PoolHolder:
         self.song_itempool: List[Item] = []
         self.base_itempool: List[Item] = []
         self.dungeon_items: List[Item] = []
+        self.search = None
 
         # location pools
         self.song_locations: List[Location] = []
@@ -47,8 +48,8 @@ class PoolHolder:
 
         self.state_list.append(world.state)
 
-    def append_worlditems(self, items: List[Item]):
-        for item in items:
+    def append_worlditems(self, world: World):
+        for item in world.itempool:
             if item.type == 'Shop':
                 self.shop_itempool.append(item)
             elif item.type != 'Song' or self.shuffle_songs_into_itempool:
@@ -72,8 +73,9 @@ class PoolHolder:
                 self.base_locations.append(location)
 
     def fill_dungeons(self, window, worlds):
+
         self.search = Search(self.state_list)
-        fill_dungeons_restrictive(window, worlds, self.search, self.fill_locations, self.dungeon_items, self.base_itempool + self.song_itempool)
+        self.fill_dungeons_restrictive(window, worlds)
         self.search.collect_locations()
 
     def place_shop_locations(self, window, worlds):
@@ -95,6 +97,28 @@ class PoolHolder:
     @property
     def location_pools(self):
         return [self.shop_locations, self.song_locations, self.base_locations]
+
+    # Places restricted dungeon items into the worlds. To ensure there is room for them.
+    # they are placed first so it will assume all other items are reachable
+    def fill_dungeons_restrictive(self, window, worlds):
+        # List of states with all non-key items
+        base_search = self.search.copy()
+        base_search.collect_all(self.base_itempool)
+        base_search.collect_locations()
+
+        # shuffle this list to avoid placement bias
+        random.shuffle(self.dungeon_items)
+
+        # sort in the order Other, Small Key, Boss Key before placing dungeon items
+        # python sort is stable, so the ordering is still random within groups
+        # fill_restrictive processes the resulting list backwards so the Boss Keys will actually be placed first
+        sort_order = {"BossKey": 3, "SmallKey": 2}
+
+        self.dungeon_items.sort(key=lambda item: sort_order.get(item.type, 1))
+
+        # place dungeon items
+        fill_restrictive(window, worlds, base_search, self.base_locations, self.dungeon_items)
+
 # Places all items into the world
 def distribute_items_restrictive(window, worlds: List[World]):
     # Generate the itempools, plucking out whether or not to shuffle song items from the first world's settings
@@ -255,27 +279,6 @@ def distribute_items_restrictive(window, worlds: List[World]):
             # Get Light Arrow location for later usage.
             if location.item and location.item.name == 'Light Arrows':
                 location.item.world.light_arrow_location = location
-
-
-# Places restricted dungeon items into the worlds. To ensure there is room for them.
-# they are placed first so it will assume all other items are reachable
-def fill_dungeons_restrictive(window, worlds, search, shuffled_locations, dungeon_items, base_itempool):
-    # List of states with all non-key items
-    base_search = search.copy()
-    base_search.collect_all(base_itempool)
-    base_search.collect_locations()
-
-    # shuffle this list to avoid placement bias
-    random.shuffle(dungeon_items)
-
-    # sort in the order Other, Small Key, Boss Key before placing dungeon items
-    # python sort is stable, so the ordering is still random within groups
-    # fill_restrictive processes the resulting list backwards so the Boss Keys will actually be placed first
-    sort_order = {"BossKey": 3, "SmallKey": 2}
-    dungeon_items.sort(key=lambda item: sort_order.get(item.type, 1))
-
-    # place dungeon items
-    fill_restrictive(window, worlds, base_search, shuffled_locations, dungeon_items)
 
 
 # Places items into dungeon locations. This is used when there should be exactly
@@ -493,7 +496,7 @@ def fill_restrictive(window, worlds, base_search, locations, base_itempool, coun
     if count > 0:
         raise FillError('Could not place the specified number of item. %d remaining to be placed.' % count)
     if count < 0 and len(base_itempool) > 0:
-        raise FillError('Could not place all the item. %d remaining to be placed.' % len(base_itempool))
+        raise FillError('Could not place all the items. %d remaining to be placed.' % len(base_itempool))
     # re-add unplaced items that were skipped
     base_itempool.extend(unplaced_items)
 

@@ -14,6 +14,16 @@ from Utils import is_bundled, close_console, check_version, VersionError, check_
 from Settings import get_settings_from_command_line_args
 
 
+def modifyLIst(aList):
+    aList.append("a")
+
+def listTest():
+    some_list = []
+    print(some_list)
+    modifyLIst(some_list)
+    print(some_list)
+
+
 class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
 
     def _get_help_string(self, action):
