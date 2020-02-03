@@ -57,31 +57,25 @@ class Region(object):
 
         return new_region
 
+
     def can_fill(self, item, manual=False):
-
-        if item.name == 'Triforce Piece':
-            return item.world.id == self.world.id
-
-        # standard items don't need crazy checks
-        if manual or not item.is_dungeonitem or item.type == 'FortressSmallKey':
-            return True
-
         is_dungeon_restricted = False
-
         if item.is_map or item.is_compass:
             is_dungeon_restricted = self.world.shuffle_mapcompass in ['dungeon', 'vanilla']
-        elif item.is_smallkey:
+        elif item.is_smallkey and item.type != 'FortressSmallKey':
             is_dungeon_restricted = self.world.shuffle_smallkeys in ['dungeon', 'vanilla']
         elif item.is_bosskey and not item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_bosskeys in ['dungeon', 'vanilla']
         elif item.is_bosskey and item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
-        if not is_dungeon_restricted:
-            return True
+        if is_dungeon_restricted and not manual:
+            return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world.id == self.world.id
 
-        return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world.id == self.world.id
+        if item.name == 'Triforce Piece':
+            return item.world.id == self.world.id
 
+        return True
 
 
     def __str__(self):

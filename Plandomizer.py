@@ -358,7 +358,7 @@ class WorldDistribution(object):
     def pool_add_item(self, pool, item_name, count):
         added_items = []
         if item_name == '#Junk':
-            added_items.extend(get_junk_item(count))
+            added_items = get_junk_item(count)
         elif is_pattern(item_name):
             add_matcher = lambda item: pattern_matcher(item_name)(item.name)
             candidates = [item.name for item in ItemIterator(predicate=add_matcher)]
@@ -415,9 +415,9 @@ class WorldDistribution(object):
 
         junk_to_add = pool_size - len(pool)
         if junk_to_add > 0:
-            self.pool_add_item(pool, "#Junk", junk_to_add)
+            junk_items = self.pool_add_item(pool, "#Junk", junk_to_add)
         else:
-            self.pool_remove_item([pool], "#Junk", -junk_to_add)
+            junk_items = self.pool_remove_item([pool], "#Junk", -junk_to_add)
 
         return pool
 

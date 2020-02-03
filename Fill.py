@@ -20,6 +20,9 @@ class ShuffleError(RuntimeError):
 class FillError(ShuffleError):
     pass
 
+song_location_title_list = ['Song from Composer Grave', 'Impa at Castle', 'Song from Malon', 'Song from Saria',
+                       'Song from Ocarina of Time', 'Song at Windmill', 'Sheik Forest Song', 'Sheik at Temple',
+                       'Sheik in Crater', 'Sheik in Ice Cavern', 'Sheik in Kakariko', 'Sheik at Colossus']
 
 class PoolHolder:
     def __init__(self, ssitempool: bool):
@@ -52,12 +55,16 @@ class PoolHolder:
         for item in world.itempool:
             if item.type == 'Shop':
                 self.shop_itempool.append(item)
-            elif item.type != 'Song' or self.shuffle_songs_into_itempool:
+            elif item.type == 'Song' and self.shuffle_songs_into_itempool:
                 self.base_itempool.append(item)
             else:
                 self.song_itempool.append(item)
 
     def append_locations(self, world: World):
+
+        if not self.shuffle_songs_into_itempool:
+            self.song_locations.extend([world.get_location(location) for location in song_location_title_list])
+
         # In prior versions, the song location list was populated from a static list of location
         # names. This means that whether or not the location was unfilled didn't matter... It still
         # got added to the song_locations list.
@@ -67,7 +74,7 @@ class PoolHolder:
         for location in world.get_unfilled_locations():
             if location.type == 'Shop' and location.price is None:
                 self.shop_locations.append(location)
-            elif location.type != 'Song' or self.shuffle_songs_into_itempool:
+            elif location.type == 'Song' and self.shuffle_songs_into_itempool:
                 self.song_locations.append(location)
             elif location.type != 'GossipStone':
                 self.base_locations.append(location)
@@ -406,6 +413,7 @@ def fill_restrictive(window, worlds, base_search, locations, base_itempool, coun
             l2cations = [l for l in locations if not l.minor_only]
         else:
             l2cations = locations
+
         random.shuffle(l2cations)
 
         # generate the max search with every remaining item
@@ -413,8 +421,7 @@ def fill_restrictive(window, worlds, base_search, locations, base_itempool, coun
         items_search.uncollect(item_to_place)
         max_search = items_search.copy()
         max_search.collect_locations()
-
-        can_reach = False
+        can_reach = None
         # perform_access_check checks location reachability
         perform_access_check = True
         if worlds[0].check_beatable_only:
@@ -429,9 +436,23 @@ def fill_restrictive(window, worlds, base_search, locations, base_itempool, coun
         # find a location that the item can be placed. It must be a valid location
         # in the world we are placing it (possibly checking for reachability)
         spot_to_fill = None
+        lastLocation = None
+        lastLocCanFill = None
+        msslRes = None
+
         for location in l2cations:
-            if not location.can_fill(max_search.state_list[location.world.id], item_to_place, perform_access_check):
+            lastLocation = location
+
+            msslRes = max_search.state_list[location.world.id]
+            lastLocCanFill = lastLocation.can_fill(msslRes, item_to_place, perform_access_check)
+            if lastLocCanFill is None or lastLocCanFill is False:
                 continue
+
+            if len(worlds) == 1:
+                # location is reachable (and reachable in item's world), so we can place it here
+                spot_to_fill = location
+                break
+
             # for multiworld, make it so that the location is also reachable
             # in the world the item is for. This is to prevent early restrictions
             # in one world being placed late in another world. If this is not

@@ -55,6 +55,7 @@ class Item(object):
         self.special = self.info.special
         self.index = self.info.index
 
+
     item_worlds_to_fix = {}
 
     def copy(self, new_world=None):
@@ -122,7 +123,7 @@ class Item(object):
         if self.name.startswith('Bombchus') and not self.world.bombchus_in_logic:
             return False
 
-        if not self.is_dungeonitem:
+        if not self.is_map or self.is_compass:
             return False
 
         # I SWEAR THERE'S A BETTER WAY OF DOING THIS

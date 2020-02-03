@@ -286,19 +286,16 @@ class World(object):
     def random_shop_prices(self):
         shop_item_indexes = ['7', '5', '8', '6']
         self.shop_prices = {}
-        rand_shops: bool = self.shopsanity == 'random'
-
         for region in self.regions:
-            if rand_shops:
+            if self.shopsanity == 'random':
                 shop_item_count = random.randint(0, 4)
             else:
                 shop_item_count = int(self.shopsanity)
 
             for location in region.locations:
-                if location.type != 'Shop':
-                    continue
-                if location.name[-1:] in shop_item_indexes[:shop_item_count]:
-                    self.shop_prices[location.name] = int(random.betavariate(1.5, 2) * 60) * 5
+                if location.type == 'Shop':
+                    if location.name[-1:] in shop_item_indexes[:shop_item_count]:
+                        self.shop_prices[location.name] = int(random.betavariate(1.5, 2) * 60) * 5
 
     def set_scrub_prices(self):
         # Get Deku Scrub Locations

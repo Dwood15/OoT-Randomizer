@@ -61,8 +61,10 @@ class Location(object):
             self.can_fill_fast(item) and
             (not check_access or state.search.spot_access(self, 'either')))
 
+
     def can_fill_fast(self, item, manual=False):
         return (self.parent_region.can_fill(item, manual) and self.item_rule(self, item))
+
 
     def is_disabled(self):
         return (self.disabled == DisableType.DISABLED) or \

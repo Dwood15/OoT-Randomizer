@@ -504,16 +504,18 @@ def copy_worlds(worlds):
 
 
 def create_playthrough(spoiler):
+    worlds = spoiler.worlds
+    if worlds[0].check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+        raise RuntimeError('Uncopied is broken too.')
     # create a copy as we will modify it
-    worlds = copy_worlds(spoiler.worlds)
-
-    states = [world.state for world in worlds]
+    old_worlds = worlds
+    worlds = copy_worlds(worlds)
 
     # if we only check for beatable, we can do this sanity check first before writing down spheres
-    if worlds[0].check_beatable_only and not State.can_beat_game(states):
-        raise RuntimeError('Cannot beat game. Something went terribly wrong!')
+    if worlds[0].check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+        raise RuntimeError('Cannot beat game. Something went terribly wrong here!')
 
-    search = RewindableSearch(states)
+    search = RewindableSearch([world.state for world in worlds])
     # Get all item locations in the worlds
     item_locations = search.progression_locations()
     # Omit certain items from the playthrough
