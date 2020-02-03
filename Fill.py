@@ -72,52 +72,43 @@ class PoolHolder:
             elif location.type != 'GossipStone':
                 self.base_locations.append(location)
 
-    def fill_dungeons(self, window, worlds):
-
-        self.search = Search(self.state_list)
-        self.fill_dungeons_restrictive(window, worlds)
-        self.search.collect_locations()
-
     def place_shop_locations(self, window, worlds):
         search = Search(self.state_list)
         fill_ownworld_restrictive(window, worlds, search, self.shop_locations, self.shop_itempool, self.base_itempool + self.song_itempool + self.dungeon_items, "shop")
         search.collect_locations()
 
-    @property
     def cloakable_locations(self):
         return self.shop_locations + self.song_locations + self.base_locations
-    @property
+
     def location_count(self):
         return len(self.base_locations) + len(self.song_locations) + len(self.shop_locations)
 
-    @property
     def models(self):
         return self.shop_itempool + self.dungeon_items + self.song_itempool + self.base_itempool
 
-    @property
     def location_pools(self):
         return [self.shop_locations, self.song_locations, self.base_locations]
 
-    # Places restricted dungeon items into the worlds. To ensure there is room for them.
-    # they are placed first so it will assume all other items are reachable
-    def fill_dungeons_restrictive(self, window, worlds):
-        # List of states with all non-key items
-        base_search = self.search.copy()
-        base_search.collect_all(self.base_itempool)
-        base_search.collect_locations()
+# Places restricted dungeon items into the worlds. To ensure there is room for them.
+# they are placed first so it will assume all other items are reachable
+def fill_dungeons_restrictive(window, worlds, search, shuffled_locations, dungeon_items, itempool):
+    # List of states with all non-key items
+    base_search = search.copy()
+    base_search.collect_all(itempool)
+    base_search.collect_locations()
 
-        # shuffle this list to avoid placement bias
-        random.shuffle(self.dungeon_items)
+    # shuffle this list to avoid placement bias
+    random.shuffle(itempool)
 
-        # sort in the order Other, Small Key, Boss Key before placing dungeon items
-        # python sort is stable, so the ordering is still random within groups
-        # fill_restrictive processes the resulting list backwards so the Boss Keys will actually be placed first
-        sort_order = {"BossKey": 3, "SmallKey": 2}
+    # sort in the order Other, Small Key, Boss Key before placing dungeon items
+    # python sort is stable, so the ordering is still random within groups
+    # fill_restrictive processes the resulting list backwards so the Boss Keys will actually be placed first
+    sort_order = {"BossKey": 3, "SmallKey": 2}
 
-        self.dungeon_items.sort(key=lambda item: sort_order.get(item.type, 1))
+    dungeon_items.sort(key=lambda item: sort_order.get(item.type, 1))
 
-        # place dungeon items
-        fill_restrictive(window, worlds, base_search, self.base_locations, self.dungeon_items)
+    # place dungeon items
+    fill_restrictive(window, worlds, base_search, shuffled_locations, dungeon_items)
 
 # Places all items into the world
 def distribute_items_restrictive(window, worlds: List[World]):
@@ -206,7 +197,9 @@ def distribute_items_restrictive(window, worlds: List[World]):
     # placement, but will leave as is for now
     if all_pools.dungeon_items:
         logger.info('Placing dungeon items.')
-        all_pools.fill_dungeons(window, worlds)
+        all_pools.search = Search(all_pools.state_list)
+        all_pools.fill_dungeons_restrictive(window, worlds, all_pools.search, all_pools.base_locations, all_pools.dungeon_items, all_pools.base_itempool + all_pools.song_itempool)
+        all_pools.search.collect_locations()
 
 
     # places the songs into the world
@@ -263,7 +256,7 @@ def distribute_items_restrictive(window, worlds: List[World]):
     if not all_pools.search.can_beat_game():
         raise FillError('Cannot beat game!')
 
-    worlds[0].settings.distribution.cloak(worlds, [all_pools.cloakable_locations], [all_pools.models])
+    worlds[0].settings.distribution.cloak(worlds, [all_pools.cloakable_locations()], [all_pools.models])
 
     for world in worlds:
         for location in world.get_filled_locations():
