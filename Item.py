@@ -82,13 +82,15 @@ class Item(object):
     # The way we're using properties is inefficient. Effectively a function call on every access
     # TODO: remap properties to private member variables.
 
+    @property
     def is_key(self):
         return self.is_smallkey or self.is_bosskey
 
+    @property
     def is_smallkey(self):
         return self.type == 'SmallKey' or self.type == 'FortressSmallKey'
 
-
+    @property
     def is_bosskey(self):
         return self.type == 'BossKey'
 
