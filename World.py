@@ -295,9 +295,10 @@ class World(object):
                 shop_item_count = int(self.shopsanity)
 
             for location in region.locations:
-                if location.type == 'Shop':
-                    if location.name[-1:] in shop_item_indexes[:shop_item_count]:
-                        self.shop_prices[location.name] = int(random.betavariate(1.5, 2) * 60) * 5
+                if location.type != 'Shop':
+                    continue
+                if location.name[-1:] in shop_item_indexes[:shop_item_count]:
+                    self.shop_prices[location.name] = int(random.betavariate(1.5, 2) * 60) * 5
 
     def set_scrub_prices(self):
         # Get Deku Scrub Locations
@@ -421,11 +422,16 @@ class World(object):
         bk_shuffle = self.shuffle_bosskeys == shuffle_type_lookup
         gk_shuffle = self.shuffle_ganon_bosskey == shuffle_type_lookup
 
+        if not mc_shuffle and not sk_shuffle and not bk_shuffle and not gk_shuffle:
+            return itempool
+
         for dungeon in self.dungeons:
             is_ganons: bool = dungeon.name == 'Ganons Castle'
 
-            for item in dungeon.items:
-                if item.mapcompass and mc_shuffle or item.smallkey and sk_shuffle:
+            for item in dungeon.all_items:
+                if mc_shuffle and (item.is_compass or item.is_map ):
+                    itempool.append(item)
+                elif item.smallkey and sk_shuffle:
                     itempool.append(item)
                 elif is_ganons and gk_shuffle or not is_ganons and bk_shuffle:
                     itempool.append(item)
@@ -449,7 +455,7 @@ class World(object):
         if not isinstance(location, Location):
             location = self.get_location(location)
 
-        # This check should never be false normally, but is here as a sanity check
+        # This is here as a sanity check - should never be false.
         if not location.can_fill_fast(item, manual):
             raise RuntimeError('Cannot assign item %s to location %s.' % (item, location))
 

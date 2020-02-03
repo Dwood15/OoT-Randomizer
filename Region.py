@@ -41,7 +41,6 @@ class Region(object):
         self.provides_time = TimeOfDay.NONE
         self.scene = None
 
-
     def copy(self, new_world):
         new_region = Region(self.name, self.type)
         new_region.world = new_world
@@ -58,23 +57,28 @@ class Region(object):
 
         return new_region
 
-
     def can_fill(self, item, manual=False):
+
+        if item.name == 'Triforce Piece':
+            return item.world.id == self.world.id
+
+        # standard items don't need crazy checks
+        if not item.is_dungeonitem or item.type == 'FortressSmallKey':
+            return True
+
         is_dungeon_restricted = False
-        if item.map or item.compass:
+
+        if item.is_map or item.is_compass:
             is_dungeon_restricted = self.world.shuffle_mapcompass in ['dungeon', 'vanilla']
-        elif item.smallkey and item.type != 'FortressSmallKey':
+        elif item.is_smallkey:
             is_dungeon_restricted = self.world.shuffle_smallkeys in ['dungeon', 'vanilla']
-        elif item.bosskey and not item.name.endswith('(Ganons Castle)'):
+        elif item.is_bosskey and not item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_bosskeys in ['dungeon', 'vanilla']
         elif item.bosskey and item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
         if is_dungeon_restricted and not manual:
             return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world.id == self.world.id
-
-        if item.name == 'Triforce Piece':
-            return item.world.id == self.world.id
 
         return True
 

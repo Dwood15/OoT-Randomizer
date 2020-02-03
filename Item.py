@@ -24,7 +24,6 @@ class ItemInfo(object):
         self.price = self.special.get('price')
         self.bottle = self.special.get('bottle', False)
 
-
     @staticmethod
     def isBottle(name):
         return name in ItemInfo.bottles
@@ -37,7 +36,6 @@ for item_name in item_table:
 
 
 class Item(object):
-
     def __init__(self, name='', world=None, event=False):
         self.name = name
         self.location = None
@@ -56,7 +54,6 @@ class Item(object):
         self.type = self.info.type
         self.special = self.info.special
         self.index = self.info.index
-
 
     item_worlds_to_fix = {}
 
@@ -82,35 +79,36 @@ class Item(object):
         for item in items_fixed:
             del cls.item_worlds_to_fix[item]
 
+    # The way we're using properties is inefficient. Effectively a function call on every access
+    # TODO: remap properties to private member variables.
+    @property
+    def is_key(self):
+        return self.is_smallkey or self.is_bosskey
 
     @property
-    def key(self):
-        return self.smallkey or self.bosskey
-
-
-    @property
-    def smallkey(self):
+    def is_smallkey(self):
         return self.type == 'SmallKey' or self.type == 'FortressSmallKey'
 
 
     @property
-    def bosskey(self):
+    def is_bosskey(self):
         return self.type == 'BossKey'
 
+    @property
+    def is_ganons_bk(self):
+        return self.is_bosskey and self.name.endswith('(Ganons Castle)')
 
     @property
-    def map(self):
+    def is_map(self):
         return self.type == 'Map'
 
-
     @property
-    def compass(self):
+    def is_compass(self):
         return self.type == 'Compass'
 
-
     @property
-    def dungeonitem(self):
-        return self.smallkey or self.bosskey or self.map or self.compass
+    def is_dungeonitem(self):
+        return self.is_key or self.is_compass or self.is_map
 
 
     @property
@@ -124,13 +122,15 @@ class Item(object):
         if self.name.startswith('Bombchus') and not self.world.bombchus_in_logic:
             return False
 
-        if self.map or self.compass:
+        if not self.is_dungeonitem:
             return False
-        if self.smallkey and self.world.shuffle_smallkeys in ['dungeon', 'vanilla']:
+
+        # I SWEAR THERE'S A BETTER WAY OF DOING THIS
+        if self.is_smallkey and self.world.shuffle_smallkeys in ['dungeon', 'vanilla']:
             return False
-        if self.bosskey and not self.name.endswith('(Ganons Castle)') and self.world.shuffle_bosskeys in ['dungeon', 'vanilla']:
+        if not self.is_bosskey and not self.is_ganons_bk and self.world.shuffle_bosskeys in ['dungeon', 'vanilla']:
             return False
-        if self.bosskey and self.name.endswith('(Ganons Castle)') and self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']:
+        if self.is_ganons_bk and self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']:
             return False
 
         return True

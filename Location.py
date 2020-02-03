@@ -29,7 +29,6 @@ class Location(object):
         else:
             self.filter_tags = list(filter_tags)
 
-
     def copy(self, new_region):
         new_location = Location(self.name, self.address, self.address2, self.default, self.type, self.scene, new_region, self.filter_tags)
         new_location.world = new_region.world
@@ -46,29 +45,24 @@ class Location(object):
 
         return new_location
 
-
     def add_rule(self, lambda_rule):
         self.access_rules.append(lambda_rule)
         self.access_rule = lambda state, **kwargs: all(rule(state, **kwargs) for rule in self.access_rules)
-
 
     def set_rule(self, lambda_rule):
         self.access_rule = lambda_rule
         self.access_rules = [lambda_rule]
 
-
     def can_fill(self, state, item, check_access=True):
         if self.minor_only and item.majoritem:
             return False
         return (
-            not self.is_disabled() and 
+            not self.is_disabled() and
             self.can_fill_fast(item) and
             (not check_access or state.search.spot_access(self, 'either')))
 
-
     def can_fill_fast(self, item, manual=False):
         return (self.parent_region.can_fill(item, manual) and self.item_rule(self, item))
-
 
     def is_disabled(self):
         return (self.disabled == DisableType.DISABLED) or \
@@ -77,6 +71,7 @@ class Location(object):
 
     # Can the player see what's placed at this location without collecting it?
     # Used to reduce JSON spoiler noise
+
     def has_preview(self):
         if self.type in ('Collectable', 'BossHeart', 'GS Token', 'Shop'):
             return True
@@ -85,7 +80,6 @@ class Location(object):
         if self.type == 'NPC':
             return self.scene in (0x4B, 0x51, 0x57) # Bombchu Bowling, Hyrule Field (OoT), Lake Hylia (RL/FA)
         return False
-
 
     def has_item(self):
         return self.item is not None

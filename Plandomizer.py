@@ -213,7 +213,15 @@ class WorldDistribution(object):
         self.base_pool = []
         self.song_as_items = False
         self.update(src_dict, update_all=True)
-
+        self.randomized_settings = None
+        self.starting_items = None
+        self.dungeons = None
+        self.trials = None
+        self.entrances = None
+        self.woth_locations = None
+        self.locations = None
+        self.barren_regions = None
+        self.gossip_stones = None
 
     def update(self, src_dict, update_all=False):
         update_dict = {
@@ -244,10 +252,9 @@ class WorldDistribution(object):
                     else:
                         setattr(self, k, None)
 
-
     def to_json(self):
         return {
-            'randomized_settings': self.randomized_settings,      
+            'randomized_settings': self.randomized_settings,
             'starting_items': SortedDict({name: record.to_json() for (name, record) in self.starting_items.items()}),
             'dungeons': {name: record.to_json() for (name, record) in self.dungeons.items()},
             'trials': {name: record.to_json() for (name, record) in self.trials.items()},
@@ -351,7 +358,7 @@ class WorldDistribution(object):
     def pool_add_item(self, pool, item_name, count):
         added_items = []
         if item_name == '#Junk':
-            added_items = get_junk_item(count)
+            added_items.extend(get_junk_item(count))
         elif is_pattern(item_name):
             add_matcher = lambda item: pattern_matcher(item_name)(item.name)
             candidates = [item.name for item in ItemIterator(predicate=add_matcher)]
@@ -408,23 +415,21 @@ class WorldDistribution(object):
 
         junk_to_add = pool_size - len(pool)
         if junk_to_add > 0:
-            junk_items = self.pool_add_item(pool, "#Junk", junk_to_add)
+            self.pool_add_item(pool, "#Junk", junk_to_add)
         else:
-            junk_items = self.pool_remove_item([pool], "#Junk", -junk_to_add)
+            self.pool_remove_item([pool], "#Junk", -junk_to_add)
 
         return pool
-
 
     def set_complete_itempool(self, pool):
         self.item_pool = {}
         for item in pool:
-            if item.dungeonitem or item.type in ('Drop', 'Event', 'DungeonReward'):
+            if item.is_dungeonitem or item.type in ('Drop', 'Event', 'DungeonReward'):
                 continue
             if item.name in self.item_pool:
                 self.item_pool[item.name].count += 1
             else:
                 self.item_pool[item.name] = ItemPoolRecord()
-
 
     def collect_starters(self, state):
         for (name, record) in self.starting_items.items():
@@ -435,7 +440,6 @@ class WorldDistribution(object):
                     continue
                 state.collect(item)
 
-
     def pool_replace_item(self, item_pools, item_group, player_id, new_item, worlds):
         removed_item = self.pool_remove_item(item_pools, item_group, 1, world_id=player_id)[0]
         item_matcher = lambda item: pattern_matcher(new_item)(item.name)
@@ -444,7 +448,6 @@ class WorldDistribution(object):
         else:
             del self.item_pool[removed_item.name]
         return random.choice(list(ItemIterator(item_matcher, worlds[player_id])))
-
 
     def set_shuffled_entrances(self, worlds, entrance_pools, target_entrance_pools, locations_to_ensure_reachable, itempool):
         for (name, record) in self.entrances.items():
@@ -469,10 +472,10 @@ class WorldDistribution(object):
 
                 target_region = record.region
 
-                matched_targets_to_region = list(filter(lambda target: target.connected_region and target.connected_region.name == target_region, 
+                matched_targets_to_region = list(filter(lambda target: target.connected_region and target.connected_region.name == target_region,
                                                         target_entrance_pools[pool_type]))
                 if not matched_targets_to_region:
-                    raise RuntimeError('No entrance found to replace with %s that leads to %s in world %d' % 
+                    raise RuntimeError('No entrance found to replace with %s that leads to %s in world %d' %
                                                 (matched_entrance, target_region, self.id + 1))
 
                 if matched_entrance.type in ['Overworld', 'OwlDrop']:
@@ -480,14 +483,14 @@ class WorldDistribution(object):
                     try:
                         matched_target = next(filter(lambda target: target.replaces.parent_region.name == target_parent, matched_targets_to_region))
                     except StopIteration:
-                        raise RuntimeError('No entrance found to replace with %s that leads to %s from %s in world %d' % 
+                        raise RuntimeError('No entrance found to replace with %s that leads to %s from %s in world %d' %
                                                 (matched_entrance, target_region, target_parent, self.id + 1))
                 else:
                     matched_target = matched_targets_to_region[0]
                     target_parent = matched_target.parent_region.name
 
                 if matched_target.connected_region == None:
-                    raise RuntimeError('Entrance leading to %s from %s is already shuffled in world %d' % 
+                    raise RuntimeError('Entrance leading to %s from %s is already shuffled in world %d' %
                                             (target_region, target_parent, self.id + 1))
 
                 change_connections(matched_entrance, matched_target)
@@ -495,7 +498,7 @@ class WorldDistribution(object):
                 try:
                     validate_worlds(worlds, None, locations_to_ensure_reachable, itempool)
                 except EntranceShuffleError as error:
-                    raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' % 
+                    raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' %
                                             (matched_entrance, matched_entrance.connected_region, self.id + 1, error))
 
                 confirm_replacement(matched_entrance, matched_target)
