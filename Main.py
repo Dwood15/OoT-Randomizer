@@ -49,6 +49,8 @@ def main(settings, window=dummy_window()):
 
     logger = logging.getLogger('')
 
+    worlds = []
+
     old_tricks = settings.allowed_tricks
     settings.load_distribution()
 
@@ -532,8 +534,7 @@ def create_playthrough(spoiler):
         # Not collecting while the generator runs means we only get one sphere at a time
         # Otherwise, an item we collect could influence later item collection in the same sphere
         collected = list(search.iter_reachable_locations(item_locations))
-        if not collected:
-            break
+        if not collected: break
         # Gather the new entrances before collecting items.
         collection_spheres.append(collected)
         accessed_entrances = set(filter(search.spot_access, remaining_entrances))

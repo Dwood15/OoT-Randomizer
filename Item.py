@@ -36,6 +36,7 @@ for item_name in item_table:
 
 
 class Item(object):
+
     def __init__(self, name='', world=None, event=False):
         self.name = name
         self.location = None

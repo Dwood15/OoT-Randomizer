@@ -1,24 +1,23 @@
 import copy
 import logging
 import random
-from typing import List
 
+from DungeonList import create_dungeons
 from Entrance import Entrance
 from HintList import getRequiredHints
 from Hints import get_hint_area
-from Item import ItemFactory, MakeEventItem, Item
+from Item import Item, ItemFactory, MakeEventItem
 from Location import Location, LocationFactory
 from LocationList import business_scrubs
-from Plandomizer import WorldDistribution
 from Region import Region, TimeOfDay
+from Rules import set_rules, set_shop_rules
 from RuleParser import Rule_AST_Transformer
 from SettingsList import get_setting_info, get_settings_from_section
 from State import State
 from Utils import read_json
 
-
 class World(object):
-    # WARNING: self.id shadows the built-in id provided by python. TODO: Rename it. Without breaking anything else, lul
+
     def __init__(self, id, settings):
         self.id = id
         self.shuffle = 'vanilla'
@@ -106,6 +105,7 @@ class World(object):
 
         self.always_hints = [hint.name for hint in getRequiredHints(self)]
 
+
     def copy(self):
         new_world = World(self.id, self.settings)
         new_world.skipped_trials = copy.copy(self.skipped_trials)
@@ -122,8 +122,8 @@ class World(object):
 
         new_world.regions = [region.copy(new_world) for region in self.regions]
         for region in new_world.regions:
-            for r_exit in region.exits:
-                r_exit.connect(new_world.get_region(r_exit.connected_region))
+            for exit in region.exits:
+                exit.connect(new_world.get_region(exit.connected_region))
 
         new_world.dungeons = [dungeon.copy(new_world) for dungeon in self.dungeons]
         new_world.itempool = [item.copy(new_world) for item in self.itempool]
@@ -528,7 +528,7 @@ class World(object):
             'Biggoron Sword',
         ]
         if (self.damage_multiplier != 'ohko' and self.damage_multiplier != 'quadruple' and
-                self.shuffle_scrubs == 'off' and not self.shuffle_grotto_entrances):
+            self.shuffle_scrubs == 'off' and not self.shuffle_grotto_entrances):
             # nayru's love may be required to prevent forced damage
             exclude_item_list.append('Nayrus Love')
         if self.logic_grottos_without_agony and self.hints != 'agony':
@@ -572,7 +572,7 @@ class World(object):
         # generate the empty area list
         self.empty_areas = {}
 
-        for area, area_info in areas.items():
+        for area,area_info in areas.items():
             useless_area = True
             for location in area_info['locations']:
                 world_id = location.item.world.id
@@ -594,7 +594,7 @@ class World(object):
                     is_bottle = True
 
                 if is_bottle or item.special.get('bottle', False):
-                    # Bottle Items are all interchangeable. Logic currently only needs
+                    # Bottle Items are all interchangable. Logic currently only needs
                     # a max on 1 bottle, but this might need to be changed in the
                     # future if using multiple bottles for fire temple diving is added
                     # to logic
