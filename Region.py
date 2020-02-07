@@ -41,6 +41,7 @@ class Region(object):
         self.provides_time = TimeOfDay.NONE
         self.scene = None
 
+
     def copy(self, new_world):
         new_region = Region(self.name, self.type)
         new_region.world = new_world
@@ -60,13 +61,13 @@ class Region(object):
 
     def can_fill(self, item, manual=False):
         is_dungeon_restricted = False
-        if item.is_map or item.is_compass:
+        if item.map or item.compass:
             is_dungeon_restricted = self.world.shuffle_mapcompass in ['dungeon', 'vanilla']
-        elif item.is_smallkey and item.type != 'FortressSmallKey':
+        elif item.smallkey and item.type != 'FortressSmallKey':
             is_dungeon_restricted = self.world.shuffle_smallkeys in ['dungeon', 'vanilla']
-        elif item.is_bosskey and not item.name.endswith('(Ganons Castle)'):
+        elif item.bosskey and not item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_bosskeys in ['dungeon', 'vanilla']
-        elif item.is_bosskey and item.name.endswith('(Ganons Castle)'):
+        elif item.bosskey and item.name.endswith('(Ganons Castle)'):
             is_dungeon_restricted = self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
         if is_dungeon_restricted and not manual:

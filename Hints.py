@@ -6,6 +6,7 @@ import struct
 import random
 from collections import OrderedDict
 
+import Item
 from HintList import getHint, getHintGroup, Hint, hintExclusions
 from Item import MakeEventItem
 from Messages import update_message_by_id
@@ -82,7 +83,7 @@ gossipLocations = {
 }
 
 
-def getItemGenericName(item):
+def getItemGenericName(item: Item):
     if item.dungeonitem:
         return item.type
     else:
@@ -90,11 +91,11 @@ def getItemGenericName(item):
 
 
 def isRestrictedDungeonItem(dungeon, item):
-    if (item.is_map or item.is_compass) and dungeon.world.shuffle_mapcompass == 'dungeon':
+    if (item.map or item.compass) and dungeon.world.shuffle_mapcompass == 'dungeon':
         return item in dungeon.dungeon_items
-    if item.is_smallkey and dungeon.world.shuffle_smallkeys == 'dungeon':
+    if item.smallkey and dungeon.world.shuffle_smallkeys == 'dungeon':
         return item in dungeon.small_keys
-    if item.is_bosskey and dungeon.world.shuffle_bosskeys == 'dungeon':
+    if item.bosskey and dungeon.world.shuffle_bosskeys == 'dungeon':
         return item in dungeon.boss_key
     return False
 

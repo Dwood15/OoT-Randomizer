@@ -9,6 +9,7 @@ from Hints import get_hint_area
 from Item import ItemFactory, MakeEventItem, Item
 from Location import Location, LocationFactory
 from LocationList import business_scrubs
+from Plandomizer import WorldDistribution
 from Region import Region, TimeOfDay
 from RuleParser import Rule_AST_Transformer
 from SettingsList import get_setting_info, get_settings_from_section
@@ -20,31 +21,11 @@ class World(object):
     # WARNING: self.id shadows the built-in id provided by python. TODO: Rename it. Without breaking anything else, lul
     def __init__(self, id, settings):
         self.id = id
-        self.shuffle_song_items: bool = False
-        self.all_reachable: bool = False
-        self.shuffle_mapcompass: str = ""
-        self.shopsanity = None
-        self.logic_grottos_without_agony = None
-        self.damage_multiplier = None
-
-        self.chicken_count_random = None
-        self.randomized_list = []
-        self.randomize_settings = ""
         self.shuffle = 'vanilla'
-        self.shuffle_bosskeys: str = ""
-        self.shuffle_smallkeys: str = ""
-        self.shuffle_scrubs: str = ""
-        self.shuffle_ganon_bosskey: str = ""
-        self.entrance_shuffle = None
         self.dungeons = []
         self.regions = []
         self.itempool = []
         self.state = State(self)
-
-        self.big_poe_count_random: bool = False
-        self.big_poe_count: int = 0
-
-        # cache information
         self._cached_locations = None
         self._entrance_cache = {}
         self._region_cache = {}
@@ -52,10 +33,9 @@ class World(object):
         self.required_locations = []
         self.shop_prices = {}
         self.scrub_prices = {}
-        self.maximum_wallets: int = 0
+        self.maximum_wallets = 0
         self.light_arrow_location = None
-        self.triforce_goal_per_world: int = 0
-        self.triforce_count: int = 0
+        self.triforce_count = 0
 
         self.parser = Rule_AST_Transformer(self)
         self.event_items = set()
@@ -160,6 +140,7 @@ class World(object):
 
     def resolve_random_settings(self):
         # evaluate settings (important for logic, nice for spoiler)
+        self.randomized_list = []
         if self.randomize_settings:
             setting_info = get_setting_info('randomize_settings')
             self.randomized_list.extend(setting_info.disable[True]['settings'])
@@ -288,7 +269,7 @@ class World(object):
         self.shop_prices = {}
         for region in self.regions:
             if self.shopsanity == 'random':
-                shop_item_count = random.randint(0, 4)
+                shop_item_count = random.randint(0,4)
             else:
                 shop_item_count = int(self.shopsanity)
 
@@ -411,39 +392,40 @@ class World(object):
     def get_itempool_with_dungeon_items(self):
         return self.get_restricted_dungeon_items() + self.get_unrestricted_dungeon_items() + self.itempool
 
-    def get_dung_items(self, shuffle_type_lookup: str):
-        itempool: List[Item] = []
-        # string comparisons are mildly expensive, so we should frontload them where possible.
-        mc_shuffle = self.shuffle_mapcompass == shuffle_type_lookup
-        sk_shuffle = self.shuffle_smallkeys == shuffle_type_lookup
-        bk_shuffle = self.shuffle_bosskeys == shuffle_type_lookup
-        gk_shuffle = self.shuffle_ganon_bosskey == shuffle_type_lookup
 
-        if not mc_shuffle and not sk_shuffle and not bk_shuffle and not gk_shuffle:
-            return itempool
-
-        for dungeon in self.dungeons:
-            is_ganons: bool = dungeon.name == 'Ganons Castle'
-
-            for item in dungeon.all_items:
-                if item.is_smallkey and sk_shuffle:
-                    itempool.append(item)
-                elif mc_shuffle and (item.is_compass or item.is_map ):
-                    itempool.append(item)
-                elif is_ganons and gk_shuffle or not is_ganons and bk_shuffle:
-                    itempool.append(item)
+    # get a list of items that should stay in their proper dungeon
+    def get_restricted_dungeon_items(self):
+        itempool = []
+        if self.shuffle_mapcompass == 'dungeon':
+            itempool.extend([item for dungeon in self.dungeons for item in dungeon.dungeon_items])
+        if self.shuffle_smallkeys == 'dungeon':
+            itempool.extend([item for dungeon in self.dungeons for item in dungeon.small_keys])
+        if self.shuffle_bosskeys == 'dungeon':
+            itempool.extend([item for dungeon in self.dungeons if dungeon.name != 'Ganons Castle' for item in dungeon.boss_key])
+        if self.shuffle_ganon_bosskey == 'dungeon':
+            itempool.extend([item for dungeon in self.dungeons if dungeon.name == 'Ganons Castle' for item in dungeon.boss_key])
 
         for item in itempool:
             item.world = self
         return itempool
 
-    # get a list of items that should stay in their proper dungeon
-    def get_restricted_dungeon_items(self):
-        return self.get_dung_items('dungeon')
 
     # get a list of items that don't have to be in their proper dungeon
     def get_unrestricted_dungeon_items(self):
-        return self.get_dung_items('keysanity')
+        itempool = []
+        if self.shuffle_mapcompass == 'keysanity':
+            itempool.extend([item for dungeon in self.dungeons for item in dungeon.dungeon_items])
+        if self.shuffle_smallkeys == 'keysanity':
+            itempool.extend([item for dungeon in self.dungeons for item in dungeon.small_keys])
+        if self.shuffle_bosskeys == 'keysanity':
+            itempool.extend([item for dungeon in self.dungeons if dungeon.name != 'Ganons Castle' for item in dungeon.boss_key])
+        if self.shuffle_ganon_bosskey == 'keysanity':
+            itempool.extend([item for dungeon in self.dungeons if dungeon.name == 'Ganons Castle' for item in dungeon.boss_key])
+
+        for item in itempool:
+            item.world = self
+        return itempool
+
 
     def find_items(self, item):
         return [location for location in self.get_locations() if location.item is not None and location.item.name == item]
@@ -452,17 +434,17 @@ class World(object):
         if not isinstance(location, Location):
             location = self.get_location(location)
 
-        # This is here as a sanity check - should never be false.
-        if not location.can_fill_fast(item, manual):
+        # This check should never be false normally, but is here as a sanity check
+        if location.can_fill_fast(item, manual):
+            location.item = item
+            item.location = location
+            item.price = location.price if location.price is not None else item.price
+            location.price = item.price
+
+            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world.id if hasattr(item, 'world') else -1, location, location.world.id if hasattr(location, 'world') else -1)
+        else:
             raise RuntimeError('Cannot assign item %s to location %s.' % (item, location))
 
-        location.item = item
-        item.location = location
-        item.price = location.price if location.price is not None else item.price
-        location.price = item.price
-
-        logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world.id if hasattr(item, 'world') else -1, location,
-                                    location.world.id if hasattr(location, 'world') else -1)
 
     def get_locations(self):
         if self._cached_locations is None:
@@ -509,9 +491,9 @@ class World(object):
             # way of doing this, but it's the only way to allow dungeons to appear.
             # So barren hints do not include these dungeon rewards.
             if location_hint in excluded_areas or \
-                    location.locked or \
-                    location.item is None or \
-                    location.item.type in ('Event', 'DungeonReward'):
+               location.locked or \
+               location.item is None or \
+               location.item.type in ('Event', 'DungeonReward'):
                 continue
 
             area = location_hint

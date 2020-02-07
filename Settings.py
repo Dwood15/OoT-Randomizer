@@ -99,7 +99,7 @@ class Settings:
                     terminal = [0] * setting.bitwidth
 
                 item_indexes = []
-                for item in value:                       
+                for item in value:
                     try:
                         item_indexes.append(setting.choice_list.index(item))
                     except ValueError:
@@ -248,7 +248,7 @@ class Settings:
             if self.check_dependency(info.name, check_random=True):
                 continue
 
-            if 'randomize_key' in info.gui_params and self.__dict__[info.gui_params['randomize_key']]:               
+            if 'randomize_key' in info.gui_params and self.__dict__[info.gui_params['randomize_key']]:
                 choices, weights = zip(*info.gui_params['distribution'])
                 self.__dict__[info.name] = random_choices(choices, weights=weights)[0]
 
@@ -319,5 +319,5 @@ def get_settings_from_command_line_args():
         else:
             print(settings.get_settings_string())
         sys.exit(0)
-        
+
     return settings, args.gui, args.loglevel, args.no_log

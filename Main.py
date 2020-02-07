@@ -49,8 +49,6 @@ def main(settings, window=dummy_window()):
 
     logger = logging.getLogger('')
 
-    worlds = []
-
     old_tricks = settings.allowed_tricks
     settings.load_distribution()
 

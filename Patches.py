@@ -59,7 +59,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     add_to_extended_object_table(rom, 0x193, triforce_obj_file)
 
     # Build a Double Defense model from the Heart Container model
-    dd_obj_file = File({ 
+    dd_obj_file = File({
         'Name': 'object_gi_hearts',
         'Start': '014D9000',
         'End': '014DA590',
@@ -755,7 +755,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
                 if command == 0x0F: # Lighting list, follows exit list
                     exit_list_end_off = rom.read_int32(current + 4) & 0x00FFFFFF
                 current += 8
-            
+
             if exit_list_start_off == 0 or exit_list_end_off == 0:
                 return
 
@@ -765,7 +765,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
             if last_id == 0:
                 list_length -= 1
 
-            # update 
+            # update
             addr = scene_start + exit_list_start_off
             for _ in range(0, list_length):
                 index = rom.read_int16(addr)
@@ -778,7 +778,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         for scene in range(0x00, 0x65):
             scene_start = rom.read_int32(scene_table + (scene * 0x14));
             add_scene_exits(scene_start)
-            
+
         return exit_table
 
 
@@ -815,7 +815,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
                 copy_entrance_record(blue_out_data + 2, new_entrance["blue_warp"] + 2, 2)
                 copy_entrance_record(replaced_entrance["index"], new_entrance["blue_warp"], 2)
 
-        
+
     exit_table = generate_exit_lookup_table()
 
     if world.shuffle_interior_entrances or world.shuffle_overworld_entrances:
@@ -905,10 +905,10 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
 
     # Fix text for Pocket Cucco.
     rom.write_byte(0xBEEF45, 0x0B)
-        
+
     # Fix stupid alcove cameras in Ice Cavern -- thanks to krim and mzx for the help
     rom.write_byte(0x2BECA25,0x01);
-    rom.write_byte(0x2BECA2D,0x01); 
+    rom.write_byte(0x2BECA2D,0x01);
 
     configure_dungeon_info(rom, world)
 
@@ -994,7 +994,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
 
     # Set the number of chickens to collect
     rom.write_byte(0x00E1E523, world.chicken_count)
-    
+
     # Change Anju to always say how many chickens are needed
     # Does not affect text for collecting item or afterwards
     rom.write_int16(0x00E1F3C2, 0x5036)
@@ -1241,7 +1241,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     # update dialogue
     new_message = "\x08Hey, young man. What's happening \x01today? If you have a \x05\x41Poe\x05\x40, I will \x01buy it.\x04\x1AIf you earn \x05\x41%d points\x05\x40, you'll\x01be a happy man! Heh heh.\x04\x08Your card now has \x05\x45\x1E\x01 \x05\x40points.\x01Come back again!\x01Heh heh heh!\x02" % poe_points
     update_message_by_id(messages, 0x70F5, new_message)
-    if world.big_poe_count != 10:      
+    if world.big_poe_count != 10:
         new_message = "\x1AOh, you brought a Poe today!\x04\x1AHmmmm!\x04\x1AVery interesting!\x01This is a \x05\x41Big Poe\x05\x40!\x04\x1AI'll buy it for \x05\x4150 Rupees\x05\x40.\x04On top of that, I'll put \x05\x41100\x01points \x05\x40on your card.\x04\x1AIf you earn \x05\x41%d points\x05\x40, you'll\x01be a happy man! Heh heh." % poe_points
         update_message_by_id(messages, 0x70f7, new_message)
         new_message = "\x1AWait a minute! WOW!\x04\x1AYou have earned \x05\x41%d points\x05\x40!\x04\x1AYoung man, you are a genuine\x01\x05\x41Ghost Hunter\x05\x40!\x04\x1AIs that what you expected me to\x01say? Heh heh heh!\x04\x1ABecause of you, I have extra\x01inventory of \x05\x41Big Poes\x05\x40, so this will\x01be the last time I can buy a \x01ghost.\x04\x1AYou're thinking about what I \x01promised would happen when you\x01earned %d points. Heh heh.\x04\x1ADon't worry, I didn't forget.\x01Just take this." % (poe_points, poe_points)
@@ -1561,7 +1561,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     if world.bridge == 'tokens':
         item = read_rom_item(rom, 0x5B)
         item['chest_type'] = 0
-        write_rom_item(rom, 0x5B, item)       
+        write_rom_item(rom, 0x5B, item)
 
     # Update chest type sizes
     if world.correct_chest_sizes:
@@ -1571,7 +1571,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         if not world.dungeon_mq['Ganons Castle']:
             rom.write_int16(0x321B176, 0xFC40) # original 0xFC48
 
-        # Move Spirit Temple Compass Chest if it is a small chest so it is reachable with hookshot 
+        # Move Spirit Temple Compass Chest if it is a small chest so it is reachable with hookshot
         if not world.dungeon_mq['Spirit Temple']:
             chest_name = 'Spirit Temple Compass Chest'
             chest_address = 0x2B6B07C
@@ -1580,7 +1580,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
             if item['chest_type'] in (1, 3):
                 rom.write_int16(chest_address + 2, 0x0190) # X pos
                 rom.write_int16(chest_address + 6, 0xFABC) # Z pos
-        
+
         # Move Silver Gauntlets chest if it is small so it is reachable from Spirit Hover Seam
         if world.logic_rules != 'glitchless':
             chest_name = 'Silver Gauntlets Chest'
@@ -1669,7 +1669,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         permutation = shuffle_messages(messages, except_hints=True)
     elif world.text_shuffle == 'complete':
         permutation = shuffle_messages(messages, except_hints=False)
-        
+
     repack_messages(rom, messages, permutation)
 
     # output a text dump, for testing...
@@ -1978,7 +1978,7 @@ def create_fake_name(name):
     for i in random.sample(vowel_indexes, min(2, len(vowel_indexes))):
         c = list_name[i]
         list_name[i] = random.choice([v for v in vowels if v != c])
-    
+
     # keeping the game E...
     new_name = ''.join(list_name)
     censor = ['cum', 'cunt', 'dike', 'penis', 'puss', 'shit']

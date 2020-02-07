@@ -80,36 +80,35 @@ class Item(object):
         for item in items_fixed:
             del cls.item_worlds_to_fix[item]
 
-    # The way we're using properties is inefficient. Effectively a function call on every access
-    # TODO: remap properties to private member variables.
 
     @property
-    def is_key(self):
-        return self.is_smallkey or self.is_bosskey
+    def key(self):
+        return self.smallkey or self.bosskey
+
 
     @property
-    def is_smallkey(self):
+    def smallkey(self):
         return self.type == 'SmallKey' or self.type == 'FortressSmallKey'
 
+
     @property
-    def is_bosskey(self):
+    def bosskey(self):
         return self.type == 'BossKey'
 
-    @property
-    def is_ganons_bk(self):
-        return self.is_bosskey and self.name.endswith('(Ganons Castle)')
 
     @property
-    def is_map(self):
+    def map(self):
         return self.type == 'Map'
 
-    @property
-    def is_compass(self):
-        return self.type == 'Compass'
 
     @property
-    def is_dungeonitem(self):
-        return self.is_key or self.is_compass or self.is_map
+    def compass(self):
+        return self.type == 'Compass'
+
+
+    @property
+    def dungeonitem(self):
+        return self.smallkey or self.bosskey or self.map or self.compass
 
 
     @property
@@ -123,15 +122,13 @@ class Item(object):
         if self.name.startswith('Bombchus') and not self.world.bombchus_in_logic:
             return False
 
-        if not self.is_map or self.is_compass:
+        if self.map or self.compass:
             return False
-
-        # I SWEAR THERE'S A BETTER WAY OF DOING THIS
-        if self.is_smallkey and self.world.shuffle_smallkeys in ['dungeon', 'vanilla']:
+        if self.smallkey and self.world.shuffle_smallkeys in ['dungeon', 'vanilla']:
             return False
-        if not self.is_bosskey and not self.is_ganons_bk and self.world.shuffle_bosskeys in ['dungeon', 'vanilla']:
+        if self.bosskey and not self.name.endswith('(Ganons Castle)') and self.world.shuffle_bosskeys in ['dungeon', 'vanilla']:
             return False
-        if self.is_ganons_bk and self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']:
+        if self.bosskey and self.name.endswith('(Ganons Castle)') and self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']:
             return False
 
         return True

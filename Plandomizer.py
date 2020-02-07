@@ -132,10 +132,7 @@ class LocationRecord(SimpleRecord({'item': None, 'player': None, 'price': None, 
 
     @staticmethod
     def from_item(item):
-        if item.world.settings.world_count > 1:
-            player = item.world.id + 1
-        else:
-            player = None if item.location is not None and item.world is item.location.world else (item.world.id + 1)
+        player = None if item.location is not None and item.world is item.location.world else (item.world.id + 1)
 
         return LocationRecord({
             'item': item.name,
@@ -213,15 +210,7 @@ class WorldDistribution(object):
         self.base_pool = []
         self.song_as_items = False
         self.update(src_dict, update_all=True)
-        self.randomized_settings = None
-        self.starting_items = None
-        self.dungeons = None
-        self.trials = None
-        self.entrances = None
-        self.woth_locations = None
-        self.locations = None
-        self.barren_regions = None
-        self.gossip_stones = None
+
 
     def update(self, src_dict, update_all=False):
         update_dict = {
@@ -424,7 +413,7 @@ class WorldDistribution(object):
     def set_complete_itempool(self, pool):
         self.item_pool = {}
         for item in pool:
-            if item.is_dungeonitem or item.type in ('Drop', 'Event', 'DungeonReward'):
+            if item.dungeonitem or item.type in ('Drop', 'Event', 'DungeonReward'):
                 continue
             if item.name in self.item_pool:
                 self.item_pool[item.name].count += 1
