@@ -11,7 +11,11 @@ from Region import Region, TimeOfDay
 
 class State(object):
 
-    def __init__(self):
+    def __init__(self, world=None):
+        if world is None:
+            raise Exception("world must not be none")
+
+        self._world = world
         self.prog_items = Counter()
         self.search = None
 
@@ -24,7 +28,7 @@ class State(object):
         return self.world.logic_rules != 'glitchless'
 
     def copy(self):
-        new_state = State()
+        new_state = State(self._world)
         new_state.prog_items = copy.copy(self.prog_items)
         return new_state
 
@@ -71,7 +75,7 @@ class State(object):
 
 
     def had_night_start(self):
-        stod = self.world.starting_tod
+        stod = self._world.starting_tod
         # These are all not between 6:30 and 18:00
         if (stod == 'sunset' or         # 18
             stod == 'evening' or        # 21

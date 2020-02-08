@@ -69,14 +69,18 @@ class Location(object):
 
         if self.minor_only and item.is_majoritem(settings):
             return False
+
         return (
             not self.is_disabled() and
             self.can_fill_fast(item) and
             (not check_access or state.search.spot_access(self, 'either')))
 
 
-    def can_fill_fast(self, item, manual=False):
-        return (self.parent_region.can_fill(item, manual) and self.item_rule(self, item))
+    def can_fill_fast(self, item, manual=False, settings=None):
+        if settings is None:
+            raise Exception("can fill settings unset entirely")
+
+        return (self.parent_region.can_fill(item=item, manual=manual, settings=settings) and self.item_rule(self, item))
 
 
     def is_disabled(self):

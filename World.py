@@ -27,7 +27,7 @@ class World(object):
         self.dungeons = []
         self.regions = []
         self.itempool = []
-        self.state = State()
+        self.state = State(self)
         self._cached_locations = None
         self._entrance_cache = {}
         self._region_cache = {}
@@ -197,7 +197,7 @@ class World(object):
                     MakeEventItem(event, new_location, self)
             if 'exits' in region:
                 for exit, rule in region['exits'].items():
-                    new_exit = Entrance('%s -> %s' % (new_region.name, exit), new_region)
+                    new_exit = Entrance('%s -> %s' % (new_region.name, exit), new_region, world=self)
                     new_exit.connected_region = exit
                     new_exit.rule_string = rule
                     if self.logic_rules != 'none':
@@ -417,7 +417,7 @@ class World(object):
             location = self.get_location(location)
 
         # This check should never be false normally, but is here as a sanity check
-        if location.can_fill_fast(item, manual):
+        if location.can_fill_fast(item, manual, self.settings):
             location.item = item
             item.location = location
             item.price = location.price if location.price is not None else item.price

@@ -7,12 +7,15 @@ from Region import TimeOfDay, Region
 
 class Search(object):
 
-    def __init__(self, state_list, initial_cache=None, root_region=None):
+    def __init__(self, state_list, initial_cache=None, root_region=None, world=None):
         if len(state_list) > 1:
             raise Exception("Why is there more than one state in the state_list ?!?")
 
-        self.state_list = state_list
+        if world is None:
+            raise Exception("SEARCH world SHOULD NOT BE NONE ?!?")
 
+        self.state_list = state_list
+        self._world = world
         # Let the states reference this search.
         for state in self.state_list:
             state.search = self
@@ -105,16 +108,19 @@ class Search(object):
     # Returns a queue of the exits whose access rule failed, 
     # as a cache for the exits to try on the next iteration.
     def _expand_regions(self, exit_queue, regions, age, world=None):
-        if world is None:
+        if world is None and self._world is None:
             raise Exception("world must not be none")
-
+        else:
+            world = self._world
         failed = []
         for exit in exit_queue:
             if exit.connected_region and exit.connected_region not in regions:
                 # Evaluate the access rule directly, without tod
-                if exit.access_rule(self.state_list[exit.world.id], spot=exit, age=age):
+                acc_rule = exit.access_rule
+
+                if acc_rule(self.state_list, spot=exit, age=age):
                     regions[exit.connected_region] = exit.connected_region.provides_time
-                    regions[exit.world.get_region('Root')] |= exit.connected_region.provides_time
+                    regions[world.get_region('Root')] |= exit.connected_region.provides_time
                     exit_queue.extend(exit.connected_region.exits)
                 else:
                     failed.append(exit)
@@ -124,7 +130,7 @@ class Search(object):
     def _expand_tod_regions(self, regions, goal_region, age, tod):
         # grab all the exits from the regions with the given tod in the same world as our goal.
         # we want those that go to existing regions without the tod, until we reach the goal.
-        has_tod_world = lambda regtod: regtod[1] & tod and regtod[0].world == goal_region.world
+        has_tod_world = lambda regtod: regtod[1] & tod
         exit_queue = list(itertools.chain.from_iterable(region.exits for region, _ in filter(has_tod_world, regions.items())))
         for exit in exit_queue:
             # We don't look for new regions, just spreading the tod to our existing regions
@@ -143,9 +149,7 @@ class Search(object):
     # the regions accessible as adult, and the set of visited locations.
     # These are references to the new entry in the cache, so they can be modified
     # directly.
-    def next_sphere(self, world=None):
-        if world is None:
-            raise Exception("world must not be none")
+    def next_sphere(self):
         # Use the queue to iteratively add regions to the accessed set,
         # until we are stuck or out of regions.
         self._cache.update({
@@ -224,13 +228,15 @@ class Search(object):
     #
     # Win condition can be a string that gets mapped to a function(state_list) here
     # or just a function(state_list)
-    def can_beat_game(self, scan_for_items=True):
+    def can_beat_game(self, scan_for_items=True, world=None):
+        if world is None:
+            raise Exception("world is None on can_beat_game")
 
         # This currently assumed all worlds have the same win condition.
         # This might not be true in the future
         def won(state):
-            if state.world.triforce_hunt:
-                return state.has('Triforce Piece', state.world.triforce_count)
+            if world.triforce_hunt:
+                return state.has('Triforce Piece', world.triforce_count)
             else:
                 return state.has('Triforce')
 

@@ -2,7 +2,12 @@ from Region import TimeOfDay
 
 
 class Entrance(object):
-    def __init__(self, name='', parent=None):
+    def __init__(self, name='', parent=None, world=None):
+
+        if world is None:
+            raise Exception("world must not be none")
+
+        self._world = world
         self.name = name
         self.parent_region = parent
         self.connected_region = None
@@ -61,7 +66,7 @@ class Entrance(object):
     def assume_reachable(self):
         if self.assumed == None:
             target_region = self.disconnect()
-            root = self.world.get_region('Root Exits')
+            root = self._world.get_region('Root Exits')
             assumed_entrance = Entrance('Root -> ' + target_region.name, root)
             assumed_entrance.connect(target_region)
             assumed_entrance.replaces = self

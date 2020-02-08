@@ -729,7 +729,7 @@ def buildGanonText(world, messages):
         location = world.light_arrow_location
         location_hint = get_hint_area(location).replace('Ganon\'s Castle', 'my castle')
         if world.id != location.world.id:
-            text += "\x05\x42Player %d's\x05\x40 %s" % (location.world.id +1, get_raw_text(location_hint))
+            text += "\x05\x42Player %d's\x05\x40 %s" % (1, get_raw_text(location_hint))
         else:
             text += get_raw_text(location_hint)
     text += '!'

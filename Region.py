@@ -60,22 +60,22 @@ class Region(object):
         return new_region
 
 
-    def can_fill(self, item, manual=False):
+    def can_fill(self, item, manual=False, settings=None):
+        if settings is None:
+            raise Exception("settings SHOULD NOT be none")
+
         is_dungeon_restricted = False
         if item.map or item.compass:
-            is_dungeon_restricted = self.world.shuffle_mapcompass in ['dungeon', 'vanilla']
+            is_dungeon_restricted = settings.shuffle_mapcompass in ['dungeon', 'vanilla']
         elif item.smallkey and item.type != 'FortressSmallKey':
-            is_dungeon_restricted = self.world.shuffle_smallkeys in ['dungeon', 'vanilla']
+            is_dungeon_restricted = settings.shuffle_smallkeys in ['dungeon', 'vanilla']
         elif item.bosskey and not item.name.endswith('(Ganons Castle)'):
-            is_dungeon_restricted = self.world.shuffle_bosskeys in ['dungeon', 'vanilla']
+            is_dungeon_restricted = settings.shuffle_bosskeys in ['dungeon', 'vanilla']
         elif item.bosskey and item.name.endswith('(Ganons Castle)'):
-            is_dungeon_restricted = self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
+            is_dungeon_restricted = settings.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
         if is_dungeon_restricted and not manual:
             return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world_id == self.world.id
-
-        if item.name == 'Triforce Piece':
-            return item.world_id == self.world.id
 
         return True
 

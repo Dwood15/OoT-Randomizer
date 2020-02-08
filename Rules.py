@@ -134,7 +134,7 @@ def set_entrances_based_rules(world):
 
     # Use the states with all items available in the pools for this seed
     complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
-    search = Search([world.state.copy()], root_region=world.get_region('Root') )
+    search = Search([world.state.copy()], root_region=world.get_region('Root'), world=world)
     search.collect_all(complete_itempool)
     search.collect_locations(world=world)
 
