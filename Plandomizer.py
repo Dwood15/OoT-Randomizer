@@ -692,8 +692,8 @@ class Distribution(object):
         if isinstance(world, list):
             raise Exception("still passing in a list when we shouldn't !!")
 
-        search = Search.max_explore([world.state], itertools.chain.from_iterable(item_pools))
-        if not search.can_beat_game(False):
+        search = Search.max_explore([world.state], itertools.chain.from_iterable(item_pools), world=world)
+        if not search.can_beat_game(False, world):
             raise FillError('Item pool does not contain items required to beat game!')
 
         for world_dist in self.world_dists:

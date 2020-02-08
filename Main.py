@@ -1,44 +1,42 @@
-from collections import OrderedDict
+import copy
+import hashlib
 import logging
+import os
+import os.path
 import platform
 import random
+import struct
 import subprocess
 import time
-import os, os.path
-import sys
-import struct
-import zipfile
-import io
-import hashlib
-import copy
+from collections import OrderedDict
 
-from World import World
-from State import State
-from Spoiler import Spoiler
-from Rom import Rom
-from Patches import patch_rom
 from Cosmetics import patch_cosmetics
 from DungeonList import create_dungeons
+from EntranceShuffle import set_entrances
 from Fill import distribute_items_restrictive, ShuffleError
+from Hints import buildGossipHints
 from Item import Item
 from ItemPool import generate_itempool
-from Hints import buildGossipHints
-from Utils import default_output_path, is_bundled, subprocess_args, data_path
-from version import __version__
-from N64Patch import create_patch_file, apply_patch_file
-from SettingsList import setting_infos, logic_tricks
-from Rules import set_rules, set_shop_rules
-from Plandomizer import Distribution
-from Search import Search, RewindableSearch
-from EntranceShuffle import set_entrances
 from LocationList import set_drop_location_names
+from N64Patch import create_patch_file, apply_patch_file
+from Rom import Rom
+from Rules import set_rules, set_shop_rules
+from Search import Search, RewindableSearch
+from SettingsList import logic_tricks
+from Spoiler import Spoiler
+from State import State
+from Utils import default_output_path, is_bundled, subprocess_args, data_path
+from World import World
+from version import __version__
 
 
 class dummy_window():
     def __init__(self):
         pass
+
     def update_status(self, text):
         pass
+
     def update_progress(self, val):
         pass
 
@@ -48,15 +46,7 @@ def main(settings, window=dummy_window()):
 
     logger = logging.getLogger('')
 
-    worlds = []
-
-    old_tricks = settings.allowed_tricks
     settings.load_distribution()
-
-    # compare pointers to lists rather than contents, so even if the two are identical
-    # we'll still log the error and note the dist file overrides completely.
-    if old_tricks and old_tricks is not settings.allowed_tricks:
-        logger.error('Tricks are set in two places! Using only the tricks from the distribution file.')
 
     for trick in logic_tricks.values():
         settings.__dict__[trick['name']] = trick['name'] in settings.allowed_tricks
@@ -110,7 +100,7 @@ def generate(settings, window):
 
     logger.info('Generating World %d.' % (id + 1))
 
-    window.update_progress(0 + 1*(id + 1)/settings.world_count)
+    window.update_progress(0 + 1 * (id + 1) / settings.world_count)
     logger.info('Creating Overworld')
 
     if settings.logic_rules == 'glitched':
@@ -127,11 +117,11 @@ def generate(settings, window):
         world.random_shop_prices()
     world.set_scrub_prices()
 
-    window.update_progress(0 + 4*(id + 1)/settings.world_count)
+    window.update_progress(0 + 4 * (id + 1) / settings.world_count)
     logger.info('Calculating Access Rules.')
     set_rules(world)
 
-    window.update_progress(0 + 5*(id + 1)/settings.world_count)
+    window.update_progress(0 + 5 * (id + 1) / settings.world_count)
     logger.info('Generating Item Pool.')
     generate_itempool(world)
     set_shop_rules(world)
@@ -180,101 +170,6 @@ def patch_and_output(settings, window, spoiler, rom, start):
         outfilebase = 'OoT_%s_%s' % (settings_string_hash, settings.seed)
 
     output_dir = default_output_path(settings.output_dir)
-
-    if settings.compress_rom == 'Patch':
-        rng_state = random.getstate()
-        file_list = []
-        window.update_progress(65)
-        for world in worlds:
-            if settings.world_count > 1:
-                window.update_status('Patching ROM: Player %d' % (world.id + 1))
-                patchfilename = '%sP%d.zpf' % (outfilebase, world.id + 1)
-            else:
-                window.update_status('Patching ROM')
-                patchfilename = '%s.zpf' % outfilebase
-
-            random.setstate(rng_state)
-            patch_rom(spoiler, world, rom)
-            cosmetics_log = patch_cosmetics(settings, rom)
-            rom.update_header()
-
-            window.update_progress(65 + 20*(world.id + 1)/settings.world_count)
-
-            window.update_status('Creating Patch File')
-            output_path = os.path.join(output_dir, patchfilename)
-            file_list.append(patchfilename)
-            create_patch_file(rom, output_path)
-            rom.restore()
-            window.update_progress(65 + 30*(world.id + 1)/settings.world_count)
-
-            if settings.create_cosmetics_log and cosmetics_log:
-                window.update_status('Creating Cosmetics Log')
-                if settings.world_count > 1:
-                    cosmetics_log_filename = "%sP%d_Cosmetics.txt" % (outfilebase, world.id + 1)
-                else:
-                    cosmetics_log_filename = '%s_Cosmetics.txt' % outfilebase
-                cosmetics_log.to_file(os.path.join(output_dir, cosmetics_log_filename))
-                file_list.append(cosmetics_log_filename)
-            cosmetics_log = None
-
-        if settings.world_count > 1:
-            window.update_status('Creating Patch Archive')
-            output_path = os.path.join(output_dir, '%s.zpfz' % outfilebase)
-            with zipfile.ZipFile(output_path, mode="w") as patch_archive:
-                for file in file_list:
-                    file_path = os.path.join(output_dir, file)
-                    patch_archive.write(file_path, file.replace(outfilebase, ''), compress_type=zipfile.ZIP_DEFLATED)
-            for file in file_list:
-                os.remove(os.path.join(output_dir, file))
-        logger.info("Created patchfile at: %s" % output_path)
-        window.update_progress(95)
-
-    elif settings.compress_rom != 'None':
-        window.update_status('Patching ROM')
-        patch_rom(spoiler, worlds[settings.player_num - 1], rom)
-        cosmetics_log = patch_cosmetics(settings, rom)
-        window.update_progress(65)
-
-        window.update_status('Saving Uncompressed ROM')
-        if settings.world_count > 1:
-            filename = "%sP%d.z64" % (outfilebase, settings.player_num)
-        else:
-            filename = '%s.z64' % outfilebase
-        output_path = os.path.join(output_dir, filename)
-        rom.write_to_file(output_path)
-        if settings.compress_rom == 'True':
-            window.update_status('Compressing ROM')
-            logger.info('Compressing ROM.')
-
-            if is_bundled():
-                compressor_path = "."
-            else:
-                compressor_path = "Compress"
-
-            if platform.system() == 'Windows':
-                if 8 * struct.calcsize("P") == 64:
-                    compressor_path += "\\Compress.exe"
-                else:
-                    compressor_path += "\\Compress32.exe"
-            elif platform.system() == 'Linux':
-                if platform.uname()[4] == 'aarch64' or platform.uname()[4] == 'arm64':
-                    compressor_path += "/Compress_ARM64"
-                else:
-                    compressor_path += "/Compress"
-            elif platform.system() == 'Darwin':
-                compressor_path += "/Compress.out"
-            else:
-                compressor_path = ""
-                logger.info('OS not supported for compression')
-
-            output_compress_path = output_path[:output_path.rfind('.')] + '-comp.z64'
-            if compressor_path != "":
-                run_process(window, logger, [compressor_path, output_path, output_compress_path])
-            os.remove(output_path)
-            logger.info("Created compessed rom at: %s" % output_compress_path)
-        else:
-            logger.info("Created uncompessed rom at: %s" % output_path)
-        window.update_progress(95)
 
     if not settings.create_spoiler or settings.output_settings:
         settings.distribution.update_spoiler(spoiler, False)
@@ -489,7 +384,7 @@ def run_process(window, logger, args):
                 files = int(line[:find_index].strip())
                 if filecount == None:
                     filecount = files
-                window.update_progress(65 + 30*(1 - files/filecount))
+                window.update_progress(65 + 30 * (1 - files / filecount))
             logger.info(line.decode('utf-8').strip('\n'))
         else:
             break
@@ -503,11 +398,13 @@ def create_playthrough(spoiler):
     worlds = [world.copy() for world in worlds]
     Item.fix_worlds_after_copy()
 
+    world = worlds[0]
+
     # if we only check for beatable, we can do this sanity check first before writing down spheres
-    if worlds[0].settings.check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+    if world.settings.check_beatable_only and not State.can_beat_game([world.state]):
         raise RuntimeError('Cannot beat game. Something went terribly wrong here!')
 
-    search = RewindableSearch([world.state for world in worlds])
+    search = RewindableSearch([world.state], root_region=world.get_root_exits(), world=world)
     # Get all item locations in the worlds
     item_locations = search.progression_locations()
     # Omit certain items from the playthrough
@@ -586,7 +483,7 @@ def create_playthrough(spoiler):
                 required_entrances.append(entrance)
 
     # Regenerate the spheres as we might not reach places the same way anymore.
-    search.reset() # search state has no items, okay to reuse sphere 0 cache
+    search.reset()  # search state has no items, okay to reuse sphere 0 cache
     collection_spheres = []
     entrance_spheres = []
     remaining_entrances = set(required_entrances)

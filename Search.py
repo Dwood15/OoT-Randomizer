@@ -51,7 +51,7 @@ class Search(object):
         # we only need to copy the top sphere since that's what we're starting with and we don't go back
         new_cache = {k: copy.copy(v) for k,v in self._cache.items()}
         # copy always makes a nonreversible instance
-        return Search(self.state_list, initial_cache=new_cache)
+        return Search(self.state_list, initial_cache=new_cache, world=self._world)
 
 
     def collect_all(self, itempool):
@@ -64,16 +64,22 @@ class Search(object):
 
 
     @classmethod
-    def max_explore(cls, state_list, itempool=None):
-        p = cls(state_list)
+    def max_explore(cls, state_list, itempool=None, world=None):
+        if world is None:
+            raise Exception("SEARCH world SHOULD NOT BE NONE ?!?")
+
+        p = cls(state_list, world=world, root_region=world.get_region('Root'))
         if itempool:
             p.collect_all(itempool)
-        p.collect_locations()
+        p.collect_locations(world=world)
         return p
 
     @classmethod
-    def with_items(cls, state_list, itempool=None):
-        p = cls(state_list)
+    def with_items(cls, state_list, itempool=None, world=None):
+        if world is None:
+            raise Exception("SEARCH world SHOULD NOT BE NONE ?!?")
+
+        p = cls(state_list, world=world, root_region=world.get_region('Root'))
         if itempool:
             p.collect_all(itempool)
         p.next_sphere()
@@ -118,12 +124,15 @@ class Search(object):
                 # Evaluate the access rule directly, without tod
                 acc_rule = exit.access_rule
 
-                if acc_rule(self.state_list, spot=exit, age=age):
-                    regions[exit.connected_region] = exit.connected_region.provides_time
-                    regions[world.get_region('Root')] |= exit.connected_region.provides_time
-                    exit_queue.extend(exit.connected_region.exits)
-                else:
+                if not acc_rule(self.state_list[0], spot=exit, age=age, world=world):
                     failed.append(exit)
+                    continue
+
+                regions[exit.connected_region] = exit.connected_region.provides_time
+                root_rgn = world.get_root_region()
+
+                regions[root_rgn] |= exit.connected_region.provides_time
+                exit_queue.extend(exit.connected_region.exits)
         return failed
 
 
@@ -183,9 +192,9 @@ class Search(object):
                 if (loc not in visited_locations
                     # Check adult first; it's the most likely.
                     and (loc.parent_region in adult_regions
-                         and loc.access_rule(self.state_list[loc.world_id], spot=loc, age='adult')
+                         and loc.access_rule(self.state_list[loc.world_id], spot=loc, age='adult', world=self._world)
                          or (loc.parent_region in child_regions
-                             and loc.access_rule(self.state_list[loc.world_id], spot=loc, age='child')))):
+                             and loc.access_rule(self.state_list[loc.world_id], spot=loc, age='child', world=self._world)))):
                     had_reachable_locations = True
                     # Mark it visited for this algorithm
                     visited_locations.add(loc)
@@ -310,7 +319,6 @@ class Search(object):
 
 
 class RewindableSearch(Search):
-
     def unvisit(self, location):
         # A location being unvisited is either:
         # in the top two caches (if it's the first being unvisited for a sphere)

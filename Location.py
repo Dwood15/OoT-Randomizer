@@ -39,7 +39,7 @@ class Location(object):
     def copy(self, new_region):
         new_location = Location(self.name, self.address, self.address2, self.default, self.type, self.scene, new_region, self.filter_tags, world_id=self.world_id)
         if self.item:
-            new_location.item = self.item.copy(new_region.world)
+            new_location.item = self.item.copy()
             new_location.item.location = new_location
         new_location.access_rule = self.access_rule
         new_location.access_rules = list(self.access_rules)
@@ -65,14 +65,14 @@ class Location(object):
 
     def can_fill(self, state, item, check_access=True, settings=None):
         if settings is None:
-            raise Exception("can fill settings unset entirely")
+            raise Exception("LOCATION can_fill settings unset entirely")
 
         if self.minor_only and item.is_majoritem(settings):
             return False
 
         return (
             not self.is_disabled() and
-            self.can_fill_fast(item) and
+            self.can_fill_fast(item, manual=False, settings=settings) and
             (not check_access or state.search.spot_access(self, 'either')))
 
 

@@ -1,13 +1,9 @@
-from Region import TimeOfDay
+from Location import Location
 
 
 class Entrance(object):
-    def __init__(self, name='', parent=None, world=None):
 
-        if world is None:
-            raise Exception("world must not be none")
-
-        self._world = world
+    def __init__(self, name='', parent=None):
         self.name = name
         self.parent_region = parent
         self.connected_region = None
@@ -20,7 +16,6 @@ class Entrance(object):
         self.shuffled = False
         self.data = None
         self.primary = False
-
 
     def copy(self, new_region):
         new_entrance = Entrance(self.name, new_region)
@@ -45,16 +40,13 @@ class Entrance(object):
         self.access_rules.append(lambda_rule)
         self.access_rule = lambda state, **kwargs: all(rule(state, **kwargs) for rule in self.access_rules)
 
-
     def set_rule(self, lambda_rule):
         self.access_rule = lambda_rule
         self.access_rules = [lambda_rule]
 
-
     def connect(self, region):
         self.connected_region = region
         region.entrances.append(self)
-
 
     def disconnect(self):
         self.connected_region.entrances.remove(self)
@@ -62,28 +54,28 @@ class Entrance(object):
         self.connected_region = None
         return previously_connected
 
+    def assume_reachable(self, root_exit=None):
+        if root_exit is None:
+            raise Exception("root_exit must not be none")
 
-    def assume_reachable(self):
-        if self.assumed == None:
+        if not isinstance(root_exit, Entrance) and not isinstance(root_exit, Location):
+            raise Exception("root_exit must not be instance of a WORLD")
+
+        if not self.assumed:
             target_region = self.disconnect()
-            root = self._world.get_region('Root Exits')
-            assumed_entrance = Entrance('Root -> ' + target_region.name, root)
+            assumed_entrance = Entrance('Root -> ' + target_region.name, root_exit)
             assumed_entrance.connect(target_region)
+            root_exit.exits.append(assumed_entrance)
             assumed_entrance.replaces = self
-            root.exits.append(assumed_entrance)
             self.assumed = assumed_entrance
         return self.assumed
-
 
     def bind_two_way(self, other_entrance):
         self.reverse = other_entrance
         other_entrance.reverse = self
 
-
     def __str__(self):
         return str(self.__unicode__())
 
-
     def __unicode__(self):
         return '%s' % self.name
-

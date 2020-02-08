@@ -25,9 +25,10 @@ kwarg_defaults = {
     'age': None,
     'spot': None,
     'tod': TimeOfDay.NONE,
+    'world': None,
 }
 
-allowed_globals = {'TimeOfDay': TimeOfDay}
+allowed_globals = {'TimeOfDay': TimeOfDay, 'World': None}
 
 rule_aliases = {}
 nonaliases = set()
@@ -62,6 +63,9 @@ class Rule_AST_Transformer(ast.NodeTransformer):
             load_aliases()
         # final rule cache
         self.rule_cache = {}
+        if allowed_globals['World'] is None:
+            allowed_globals['World'] = world
+
 
     # @property
     # def world(self):
@@ -183,8 +187,8 @@ class Rule_AST_Transformer(ast.NodeTransformer):
                 if child.id in self.world.__dict__:
                     child = ast.Attribute(
                         value=ast.Attribute(
-                            value=ast.Name(id='state', ctx=ast.Load()),
-                            attr='world',
+                            value=ast.Name(id='world', ctx=ast.Load()),
+                            # attr='world',
                             ctx=ast.Load()),
                         attr=child.id,
                         ctx=ast.Load())
@@ -205,10 +209,10 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         if isinstance(node.value, ast.Name):
             return ast.Subscript(
                 value=ast.Attribute(
-                    value=ast.Attribute(
-                        value=ast.Name(id='state', ctx=ast.Load()),
-                        attr='world',
-                        ctx=ast.Load()),
+                    value=ast.Name(id='world', ctx=ast.Load()),
+                    # value=ast.Attribute(
+                        # attr='world',
+                        # ctx=ast.Load()),
                     attr=node.value.id,
                     ctx=ast.Load()),
                 slice=ast.Index(value=ast.Str(node.slice.value.id.replace('_', ' '))),

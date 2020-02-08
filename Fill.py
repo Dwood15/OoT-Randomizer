@@ -95,7 +95,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     itempool = progitempool + prioitempool + restitempool
 
     # Start a search cache here.
-    search = Search([world.state])
+    search = Search([world.state], world=world, root_region=world.get_region('Root'))
 
     # We place all the shop items first. Like songs, they have a more limited
     # set of locations that they can be placed in, so placing them first will
@@ -108,7 +108,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     # Update the shop item access rules
     set_shop_rules(world)
 
-    search.collect_locations()
+    search.collect_locations(world=world)
 
     # If there are dungeon items that are restricted to their original dungeon,
     # we must place them first to make sure that there is always a location to
@@ -117,7 +117,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     if dungeon_items:
         logger.info('Placing dungeon items.')
         fill_dungeons_restrictive(window, world, search, fill_locations, dungeon_items, itempool + songitempool)
-        search.collect_locations()
+        search.collect_locations(world=world)
 
     # places the songs into the world
     # Currently places songs only at song locations. if there's an option
@@ -128,7 +128,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     if not world.shuffle_song_items:
         logger.info('Placing song items.')
         fill_ownworld_restrictive(window, world, search, song_locations, songitempool, progitempool, "song")
-        search.collect_locations()
+        search.collect_locations(world=world)
         fill_locations += [location for location in song_locations if location.item is None]
 
     # Put one item in every dungeon, needs to be done before other items are
@@ -136,14 +136,14 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     if world.one_item_per_dungeon:
         logger.info('Placing one major item per dungeon.')
         fill_dungeon_unique_item(window, world, search, fill_locations, progitempool)
-        search.collect_locations()
+        search.collect_locations(world=world)
 
     # Place all progression items. This will include keys in keysanity.
     # Items in this group will check for reachability and will be placed
     # such that the game is guaranteed beatable.
     logger.info('Placing progression items.')
     fill_restrictive(window, world, search, fill_locations, progitempool)
-    search.collect_locations()
+    search.collect_locations(world=world)
 
     # Place all priority items.
     # These items are items that only check if the item is allowed to be
@@ -170,7 +170,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     if fill_locations:
         raise FillError('Not all locations have an item.')
 
-    if not search.can_beat_game():
+    if not search.can_beat_game(world=world):
         raise FillError('Cannot beat game!')
 
     #TODO cloak == single-world
@@ -201,7 +201,7 @@ def fill_dungeons_restrictive(window, world, search, shuffled_locations, dungeon
     # List of states with all non-key items
     base_search = search.copy()
     base_search.collect_all(itempool)
-    base_search.collect_locations()
+    base_search.collect_locations(world=world)
 
     # shuffle this list to avoid placement bias
     random.shuffle(dungeon_items)
@@ -363,7 +363,7 @@ def fill_restrictive(window, world, base_search, locations, itempool, count=-1):
         # this will allow us to place this item in a reachable location
         items_search.uncollect(item_to_place)
         max_search = items_search.copy()
-        max_search.collect_locations()
+        max_search.collect_locations(world=world)
 
         # perform_access_check checks location reachability
         perform_access_check = True

@@ -2,20 +2,16 @@ import copy
 import logging
 import random
 
-import ItemPool
-from DungeonList import create_dungeons
 from Entrance import Entrance
 from HintList import getRequiredHints
 from Hints import get_hint_area
-from Item import Item, ItemFactory, MakeEventItem, IsItem
-from ItemPool import item_groups, get_junk_item
+from Item import ItemFactory, MakeEventItem, IsItem
+from ItemPool import item_groups
 from Location import Location, LocationFactory
 from LocationList import business_scrubs
 from Plandomizer import pattern_dict_items, pull_item_or_location
 from Region import Region, TimeOfDay
-from Rules import set_rules, set_shop_rules
 from RuleParser import Rule_AST_Transformer
-from SettingsList import get_setting_info, get_settings_from_section
 from State import State
 from Utils import read_json
 
@@ -130,14 +126,14 @@ class World(object):
         new_world.triforce_count = self.triforce_count
         new_world.maximum_wallets = self.maximum_wallets
 
-        new_world.regions = [region.copy(new_world) for region in self.regions]
+        new_world.regions = [region.copy() for region in self.regions]
         for region in new_world.regions:
             for exit in region.exits:
                 exit.connect(new_world.get_region(exit.connected_region))
 
         new_world.dungeons = [dungeon.copy(new_world) for dungeon in self.dungeons]
         new_world.itempool = [item.copy(new_world) for item in self.itempool]
-        new_world.state = self.state.copy(new_world)
+        new_world.state = self.state.copy()
         new_world.always_hints = list(self.always_hints)
 
         return new_world
@@ -197,7 +193,7 @@ class World(object):
                     MakeEventItem(event, new_location, self)
             if 'exits' in region:
                 for exit, rule in region['exits'].items():
-                    new_exit = Entrance('%s -> %s' % (new_region.name, exit), new_region, world=self)
+                    new_exit = Entrance('%s -> %s' % (new_region.name, exit), new_region)
                     new_exit.connected_region = exit
                     new_exit.rule_string = rule
                     if self.logic_rules != 'none':
@@ -333,6 +329,12 @@ class World(object):
             item = prizepool.pop()
             loc = prize_locs.pop()
             self.push_item(loc, item)
+
+    def get_root_region(self):
+        return self.get_region('Root')
+
+    def get_root_exits(self):
+        return self.get_region('Root Exits')
 
     def get_region(self, regionname):
         if isinstance(regionname, Region):

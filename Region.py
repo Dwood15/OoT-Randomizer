@@ -43,9 +43,11 @@ class Region(object):
     def world(self):
         raise Exception("ENTRANCE world SHOULD NOT be referenced")
 
-    def copy(self, new_world):
+    def copy(self, new_world=None):
+        if new_world is not None:
+            raise Exception("REGION copy() new_world should not be getting passed")
+
         new_region = Region(self.name, self.type)
-        new_region.world = new_world
         new_region.price = self.price
         new_region.hint = self.hint
         new_region.time_passes = self.time_passes
@@ -75,7 +77,7 @@ class Region(object):
             is_dungeon_restricted = settings.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
         if is_dungeon_restricted and not manual:
-            return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world_id == self.world.id
+            return self.dungeon and self.dungeon.is_dungeon_item(item)
 
         return True
 

@@ -70,11 +70,11 @@ class Item(object):
         if new_world is not None and new_world.id != self._world_id:
             raise Exception("Making a copy with a new world that does not match the original world")
 
-        new_item = Item(self.name, new_world.id, self.event)
+        new_item = Item(self.name, 0, self.event)
         new_item.price = self.price
 
         if new_world is None:
-            Item.item_worlds_to_fix[new_item] = self.world_id
+            Item.item_worlds_to_fix[new_item] = 0
 
         return new_item
 
