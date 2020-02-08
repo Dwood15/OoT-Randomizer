@@ -14,6 +14,7 @@ from Utils import is_bundled, close_console, check_version, VersionError, check_
 from Settings import get_settings_from_command_line_args
 
 
+
 class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
 
     def _get_help_string(self, action):

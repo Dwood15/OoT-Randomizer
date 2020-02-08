@@ -6,6 +6,7 @@ import struct
 import random
 from collections import OrderedDict
 
+import Item
 from HintList import getHint, getHintGroup, Hint, hintExclusions
 from Item import MakeEventItem
 from Messages import update_message_by_id
@@ -82,11 +83,7 @@ gossipLocations = {
 }
 
 
-def getItemGenericName(item):
-    if item.dungeonitem:
-        return item.type
-    else:
-        return item.name
+
 
 
 def isRestrictedDungeonItem(dungeon, item):
@@ -148,7 +145,7 @@ def add_hint(spoiler, world, IDs, gossip_text, count, location=None, force_reach
                 else:
                     # If flagged to guarantee reachable, then skip
                     # If no stones are reachable, then this will place nothing
-                    skipped_ids.append(id)                
+                    skipped_ids.append(id)
         else:
             # Out of IDs
             if not force_reachable and len(duplicates) >= total:
@@ -242,7 +239,7 @@ def colorText(gossip_text):
                 splitText[0] += splitText[1][:len(prefix)]
                 splitText[1] = splitText[1][len(prefix):]
                 break
-        
+
         splitText[1] = '\x05' + colorMap[color] + splitText[1] + '\x05\x40'
         text = ''.join(splitText)
 
@@ -267,9 +264,9 @@ def get_hint_area(spot):
 
 def get_woth_hint(spoiler, world, checked):
     locations = spoiler.required_locations[world.id]
-    locations = list(filter(lambda location: 
+    locations = list(filter(lambda location:
         location.name not in checked and \
-        not (world.woth_dungeon >= 2 and location.parent_region.dungeon), 
+        not (world.woth_dungeon >= 2 and location.parent_region.dungeon),
         locations))
 
     if not locations:
@@ -292,9 +289,9 @@ def get_woth_hint(spoiler, world, checked):
 
 
 def get_barren_hint(spoiler, world, checked):
-    areas = list(filter(lambda area: 
+    areas = list(filter(lambda area:
         area not in checked and \
-        not (world.barren_dungeon and world.empty_areas[area]['dungeon']), 
+        not (world.barren_dungeon and world.empty_areas[area]['dungeon']),
         world.empty_areas.keys()))
 
     if not areas:
@@ -326,7 +323,7 @@ def get_good_item_hint(spoiler, world, checked):
     location = random.choice(locations)
     checked.add(location.name)
 
-    item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+    item_text = getHint(location.item.genericName, world.clearer_hints).text
     if location.parent_region.dungeon:
         location_text = getHint(location.parent_region.dungeon.name, world.clearer_hints).text
         return (GossipText('#%s# hoards #%s#.' % (location_text, item_text), ['Green', 'Red']), location)
@@ -349,7 +346,7 @@ def get_random_location_hint(spoiler, world, checked):
     checked.add(location.name)
     dungeon = location.parent_region.dungeon
 
-    item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+    item_text = getHint(location.item.genericName, world.clearer_hints).text
     if dungeon:
         location_text = getHint(dungeon.name, world.clearer_hints).text
         return (GossipText('#%s# hoards #%s#.' % (location_text, item_text), ['Green', 'Red']), location)
@@ -370,8 +367,8 @@ def get_specific_hint(spoiler, world, checked, type):
 
     location_text = hint.text
     if '#' not in location_text:
-        location_text = '#%s#' % location_text   
-    item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+        location_text = '#%s#' % location_text
+    item_text = getHint(location.item.genericName, world.clearer_hints).text
 
     return (GossipText('%s #%s#.' % (location_text, item_text), ['Green', 'Red']), location)
 
@@ -446,7 +443,7 @@ hint_func = {
     'woth':     get_woth_hint,
     'barren':   get_barren_hint,
     'item':     get_good_item_hint,
-    'sometimes':get_sometimes_hint,    
+    'sometimes':get_sometimes_hint,
     'song':     get_song_hint,
     'minigame': get_minigame_hint,
     'ow':       get_overworld_hint,
@@ -586,7 +583,7 @@ def buildWorldGossipHints(spoiler, world, checkedLocations=None):
         location_text = getHint(location.name, world.clearer_hints).text
         if '#' not in location_text:
             location_text = '#%s#' % location_text
-        item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+        item_text = getHint(location.item.genericName, world.clearer_hints).text
         add_hint(spoiler, world, stoneIDs, GossipText('%s #%s#.' % (location_text, item_text), ['Green', 'Red']), hint_dist['always'][1], location, force_reachable=True)
 
     # Add trial hints
@@ -666,8 +663,8 @@ def buildWorldGossipHints(spoiler, world, checkedLocations=None):
 def buildBossRewardHints(world, messages):
     # text that appears at altar as a child.
     bossRewardsSpiritualStones = [
-        ('Kokiri Emerald',   'Green'), 
-        ('Goron Ruby',       'Red'), 
+        ('Kokiri Emerald',   'Green'),
+        ('Goron Ruby',       'Red'),
         ('Zora Sapphire',    'Blue'),
     ]
     child_text = '\x08'

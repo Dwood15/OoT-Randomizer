@@ -34,7 +34,7 @@ def getHintGroup(group, world):
     for name in hintTable:
 
         # Some hints have a confusing text in the scope of grotto entrance shuffle so we exclude them
-        if world.shuffle_grotto_entrances:
+        if world.settings.shuffle_grotto_entrances:
             if name == 'GS Hyrule Castle Grotto' or name == 'GS Hyrule Field Near Gerudo Valley':
                 continue
 
@@ -60,14 +60,14 @@ def getRequiredHints(world):
 # Hints required under certain settings
 conditional_always = {
     '10 Big Poes':               lambda world: world.big_poe_count > 3,
-    'Deku Theater Skull Mask':   lambda world: world.hint_dist == 'tournament',
-    'Song from Ocarina of Time': lambda world: world.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
-    'Ocarina of Time':           lambda world: world.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
-    'Sheik in Kakariko':         lambda world: world.bridge not in ('medallions', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_medallions', 'lacs_dungeons'),
+    'Deku Theater Skull Mask':   lambda world: world.settings.hint_dist == 'tournament',
+    'Song from Ocarina of Time': lambda world: world.settings.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
+    'Ocarina of Time':           lambda world: world.settings.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
+    'Sheik in Kakariko':         lambda world: world.settings.bridge not in ('medallions', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_medallions', 'lacs_dungeons'),
     'Biggoron':                  lambda world: world.logic_earliest_adult_trade != 'claim_check' or world.logic_latest_adult_trade != 'claim_check',
-    '50 Gold Skulltula Reward':  lambda world: world.bridge != 'tokens' or world.bridge_tokens < 50,
-    '40 Gold Skulltula Reward':  lambda world: world.bridge != 'tokens' or world.bridge_tokens < 40,
-    '30 Gold Skulltula Reward':  lambda world: world.bridge != 'tokens' or world.bridge_tokens < 30,
+    '50 Gold Skulltula Reward':  lambda world: world.settings.bridge != 'tokens' or world.settings.bridge_tokens < 50,
+    '40 Gold Skulltula Reward':  lambda world: world.settings.bridge != 'tokens' or world.settings.bridge_tokens < 40,
+    '30 Gold Skulltula Reward':  lambda world: world.settings.bridge != 'tokens' or world.settings.bridge_tokens < 30,
 }
 
 
@@ -424,7 +424,7 @@ hintTable = {
     'Bottom of the Well':                                       ("a shadow\'s prison", "Bottom of the Well", 'dungeonName'),
     'Gerudo Training Grounds':                                  ("the test of thieves", "Gerudo Training Grounds", 'dungeonName'),
     'Ganons Castle':                                            ("a conquered citadel", "Ganon's Castle", 'dungeonName'),
-    
+
     'Queen Gohma':                                              ("One inside an #ancient tree#...^", "One in the #Deku Tree#...^", 'boss'),
     'King Dodongo':                                             ("One within an #immense cavern#...^", "One in #Dodongo's Cavern#...^", 'boss'),
     'Barinade':                                                 ("One in the #belly of a deity#...^", "One in #Jabu Jabu's Belly#...^", 'boss'),
@@ -438,7 +438,7 @@ hintTable = {
     'Spiritual Stone Text End':                                 ("\x13\x08Stand with the Ocarina of Time&and play the Song of Time.", None, 'boss'),
     'Medallion Text Start':                                     ("When evil rules all, an awakening&voice from the Sacred Realm will&call those destined to be Sages,&who dwell in the \x05\x41five temples\x05\x40.^", None, 'boss'),
     'Medallion Text End':                                       ("\x13\x12Together with the Hero of Time,&the awakened ones will bind&the evil and return the light&of peace to the world.", None, 'boss'),
-    
+
     'Validation Line':                                          ("Hmph... Since you made it this far,&I'll let you know what glorious&prize of Ganon's you likely&missed out on in my tower.^Behold...^", None, 'validation line'),
     'Light Arrow Location':                                     ("Ha ha ha... You'll never beat me by&reflecting my lightning bolts&and unleashing the arrows from&", None, 'Light Arrow Location'),
     '2001':                                                     ("Oh! It's @.&I was expecting someone called&Sheik. Do you know what&happened to them?", None, 'ganonLine'),
@@ -473,7 +473,7 @@ def hintExclusions(world, clear_cache=False):
     location_hints = []
     for name in hintTable:
         hint = getHint(name, world.clearer_hints)
-        if any(item in hint.type for item in 
+        if any(item in hint.type for item in
                 ['always',
                  'sometimes',
                  'minigame',

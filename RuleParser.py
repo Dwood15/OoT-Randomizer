@@ -422,14 +422,14 @@ class Rule_AST_Transformer(ast.NodeTransformer):
     ## Handlers for compile-time optimizations (former State functions)
 
     def at_day(self, node):
-        if self.world.ensure_tod_access:
+        if self.world.settings.ensure_tod_access:
             # tod has DAY or (tod == NONE and (ss or find a path from a provider))
             # parsing is better than constructing this expression by hand
             return ast.parse("(tod & TimeOfDay.DAY) if tod else (state.has_all_of(('Ocarina', 'Suns Song')) or state.search.can_reach(spot.parent_region, age=age, tod=TimeOfDay.DAY))", mode='eval').body
         return ast.NameConstant(True)
 
     def at_dampe_time(self, node):
-        if self.world.ensure_tod_access:
+        if self.world.settings.ensure_tod_access:
             # tod has DAMPE or (tod == NONE and (find a path from a provider))
             # parsing is better than constructing this expression by hand
             return ast.parse("(tod & TimeOfDay.DAMPE) if tod else state.search.can_reach(spot.parent_region, age=age, tod=TimeOfDay.DAMPE)", mode='eval').body
@@ -439,7 +439,7 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         if self.current_spot.type == 'GS Token' and self.world.logic_no_night_tokens_without_suns_song:
             # Using visit here to resolve 'can_play' rule
             return self.visit(ast.parse('can_play(Suns_Song)', mode='eval').body)
-        if self.world.ensure_tod_access:
+        if self.world.settings.ensure_tod_access:
             # tod has DAMPE or (tod == NONE and (ss or find a path from a provider))
             # parsing is better than constructing this expression by hand
             return ast.parse("(tod & TimeOfDay.DAMPE) if tod else (state.has_all_of(('Ocarina', 'Suns Song')) or state.search.can_reach(spot.parent_region, age=age, tod=TimeOfDay.DAMPE))", mode='eval').body

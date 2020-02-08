@@ -15,13 +15,13 @@ def set_rules(world):
     is_child = world.parser.parse_rule('is_child')
 
     for location in world.get_locations():
-        if not world.shuffle_song_items:
+        if not world.settings.shuffle_song_items:
             if location.type == 'Song':
                 # allow junk items, but songs must still have matching world
-                add_item_rule(location, lambda location, item: 
-                    ((location.world.distribution.song_as_items or world.start_with_fast_travel) 
+                add_item_rule(location, lambda location, item:
+                    ((location.world.distribution.song_as_items or world.start_with_fast_travel)
                         and item.type != 'Song')
-                    or (item.type == 'Song' and item.world.id == location.world.id))
+                    or (item.type == 'Song' and item.world_id == location.world.id))
             else:
                 add_item_rule(location, lambda location, item: item.type != 'Song')
 
@@ -31,7 +31,7 @@ def set_rules(world):
                 location.price = world.shop_prices[location.name]
                 location.add_rule(create_shop_rule(location))
             else:
-                add_item_rule(location, lambda location, item: item.type == 'Shop' and item.world.id == location.world.id)
+                add_item_rule(location, lambda location, item: item.type == 'Shop' and item.world_id == location.world.id)
         elif 'Deku Scrub' in location.name:
             location.add_rule(create_shop_rule(location))
         else:
@@ -128,19 +128,20 @@ def set_shop_rules(world):
 
 # This function should be ran once after setting up entrances and before placing items
 # The goal is to automatically set item rules based on age requirements in case entrances were shuffled
-def set_entrances_based_rules(worlds):
+def set_entrances_based_rules(world):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
 
     # Use the states with all items available in the pools for this seed
-    complete_itempool = [item for world in worlds for item in world.get_itempool_with_dungeon_items()]
-    search = Search([world.state for world in worlds])
+    complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
+    search = Search([world.state])
     search.collect_all(complete_itempool)
     search.collect_locations()
 
-    for world in worlds:
-        for location in world.get_locations():
-            if location.type == 'Shop':
-                # If All Locations Reachable is on, prevent shops only ever reachable as child from containing Buy Goron Tunic and Buy Zora Tunic items
-                if not world.check_beatable_only:
-                    if not search.can_reach(location.parent_region, age='adult'):
-                        forbid_item(location, 'Buy Goron Tunic')
-                        forbid_item(location, 'Buy Zora Tunic')
+    for location in world.get_locations():
+        if location.type == 'Shop':
+            # If All Locations Reachable is on, prevent shops only ever reachable as child from containing Buy Goron Tunic and Buy Zora Tunic items
+            if not world.settings.check_beatable_only:
+                if not search.can_reach(location.parent_region, age='adult'):
+                    forbid_item(location, 'Buy Goron Tunic')
+                    forbid_item(location, 'Buy Zora Tunic')

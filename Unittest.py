@@ -46,6 +46,17 @@ bottles = {
 junk = set(remove_junk_items)
 
 
+def aborting_run(self, result=None):
+    if result.failures or result.errors:
+        print("aborted")
+    else:
+        original_run(self, result)
+
+
+original_run = unittest.TestCase.run
+unittest.TestCase.run = aborting_run
+unittest.TestProgram.failfast = True
+
 def load_settings(settings_file, seed=None):
     sfile = os.path.join(test_dir, settings_file)
     ofile = os.path.join(test_dir, 'Output', os.path.splitext(settings_file)[0])

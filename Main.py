@@ -44,7 +44,6 @@ class dummy_window():
 
 
 def main(settings, window=dummy_window()):
-
     start = time.process_time()
 
     logger = logging.getLogger('')
@@ -86,7 +85,7 @@ def main(settings, window=dummy_window()):
     settings.remove_disabled()
     logger.info('(Original) Settings string: %s\n', settings.settings_string)
     random.seed(settings.numeric_seed)
-    settings.resolve_random_settings(cosmetic=False)
+
     logger.debug(settings.get_settings_display())
     max_attempts = 1
     for attempt in range(1, max_attempts + 1):
@@ -144,11 +143,11 @@ def generate(settings, window):
         settings.distribution.configure_triforce_hunt(worlds)
 
     logger.info('Setting Entrances.')
-    set_entrances(worlds)
+    set_entrances(worlds[0])
 
     window.update_status('Placing the Items')
     logger.info('Fill the world.')
-    distribute_items_restrictive(window, worlds)
+    distribute_items_restrictive(window, worlds[0])
     window.update_progress(35)
 
     spoiler = Spoiler(worlds)
@@ -497,22 +496,16 @@ def run_process(window, logger, args):
             break
 
 
-def copy_worlds(worlds):
-    worlds = [world.copy() for world in worlds]
-    Item.fix_worlds_after_copy(worlds)
-    return worlds
-
-
 def create_playthrough(spoiler):
     worlds = spoiler.worlds
-    if worlds[0].check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+    if worlds[0].settings.check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
         raise RuntimeError('Uncopied is broken too.')
     # create a copy as we will modify it
-    old_worlds = worlds
-    worlds = copy_worlds(worlds)
+    worlds = [world.copy() for world in worlds]
+    Item.fix_worlds_after_copy(worlds)
 
     # if we only check for beatable, we can do this sanity check first before writing down spheres
-    if worlds[0].check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+    if worlds[0].settings.check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
         raise RuntimeError('Cannot beat game. Something went terribly wrong here!')
 
     search = RewindableSearch([world.state for world in worlds])
@@ -528,7 +521,7 @@ def create_playthrough(spoiler):
     collection_spheres = []
     entrance_spheres = []
     remaining_entrances = set(entrance for world in worlds for entrance in world.get_shuffled_entrances())
-    
+
     while True:
         search.checkpoint()
         # Not collecting while the generator runs means we only get one sphere at a time
@@ -542,7 +535,7 @@ def create_playthrough(spoiler):
         remaining_entrances -= accessed_entrances
         for location in collected:
             # Collect the item for the state world it is for
-            search.state_list[location.item.world.id].collect(location.item)
+            search.state_list[location.item.world_id].collect(location.item)
     logger.info('Collected %d spheres', len(collection_spheres))
 
     # Reduce each sphere in reverse order, by checking if the game is beatable
@@ -555,7 +548,7 @@ def create_playthrough(spoiler):
             old_item = location.item
 
             # Uncollect the item and location.
-            search.state_list[old_item.world.id].remove(old_item)
+            search.state_list[old_item.world_id].remove(old_item)
             search.unvisit(location)
 
             # Generic events might show up or not, as usual, but since we don't
@@ -568,7 +561,7 @@ def create_playthrough(spoiler):
             location.item = None
 
             # An item can only be required if it isn't already obtained or if it's progressive
-            if search.state_list[old_item.world.id].item_count(old_item.name) < old_item.special.get('progressive', 1):
+            if search.state_list[old_item.world_id].item_count(old_item.name) < old_item.special.get('progressive', 1):
                 # Test whether the game is still beatable from here.
                 logger.debug('Checking if %s is required to beat the game.', old_item.name)
                 if not search.can_beat_game():
@@ -608,7 +601,7 @@ def create_playthrough(spoiler):
         if internal:
             # collect only the internal events but don't record them in a sphere
             for location in internal:
-                search.state_list[location.item.world.id].collect(location.item)
+                search.state_list[location.item.world_id].collect(location.item)
             # Remaining locations need to be saved to be collected later
             collected -= internal
             continue
@@ -619,7 +612,7 @@ def create_playthrough(spoiler):
         remaining_entrances -= accessed_entrances
         for location in collected:
             # Collect the item for the state world it is for
-            search.state_list[location.item.world.id].collect(location.item)
+            search.state_list[location.item.world_id].collect(location.item)
         collected.clear()
     logger.info('Collected %d final spheres', len(collection_spheres))
 

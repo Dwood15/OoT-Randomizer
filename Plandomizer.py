@@ -132,10 +132,7 @@ class LocationRecord(SimpleRecord({'item': None, 'player': None, 'price': None, 
 
     @staticmethod
     def from_item(item):
-        if item.world.settings.world_count > 1:
-            player = item.world.id + 1
-        else:
-            player = None if item.location is not None and item.world is item.location.world else (item.world.id + 1)
+        player = 1
 
         return LocationRecord({
             'item': item.name,
@@ -244,10 +241,9 @@ class WorldDistribution(object):
                     else:
                         setattr(self, k, None)
 
-
     def to_json(self):
         return {
-            'randomized_settings': self.randomized_settings,      
+            'randomized_settings': self.randomized_settings,
             'starting_items': SortedDict({name: record.to_json() for (name, record) in self.starting_items.items()}),
             'dungeons': {name: record.to_json() for (name, record) in self.dungeons.items()},
             'trials': {name: record.to_json() for (name, record) in self.trials.items()},
@@ -272,46 +268,17 @@ class WorldDistribution(object):
                 raise KeyError('Cannot add location that already exists')
         self.locations[new_location] = LocationRecord(new_item)
 
-
-    def configure_dungeons(self, world, dungeon_pool):
-        dist_num_mq = 0
-        for (name, record) in self.dungeons.items():
-            if record.mq is not None:
-                dungeon_pool.remove(name)
-                if record.mq:
-                    dist_num_mq += 1
-                    world.dungeon_mq[name] = True
-        return dist_num_mq
-
-
-    def configure_trials(self, trial_pool):
-        dist_chosen = []
-        for (name, record) in self.trials.items():
-            if record.active is not None:
-                trial_pool.remove(name)
-                if record.active:
-                    dist_chosen.append(name)
-        return dist_chosen
-
-
-    def configure_randomized_settings(self, world):
-        for name, record in self.randomized_settings.items():
-            setattr(world, name, record)
-            if name not in world.randomized_list:
-                world.randomized_list.append(name)
-
-
     def configure_stating_items_settings(self, world):
-        if world.start_with_wallet:
+        if world.settings.start_with_wallet:
             self.give_item('Progressive Wallet', 3)
-        if world.start_with_rupees:
+        if world.settings.start_with_rupees:
             self.give_item('Rupees', 999)
-        if world.start_with_deku_equipment:
+        if world.settings.start_with_deku_equipment:
             if world.shopsanity == "off":
                 self.give_item('Deku Shield')
             self.give_item('Deku Sticks', 99)
             self.give_item('Deku Nuts', 99)
-        if world.start_with_fast_travel:
+        if world.settings.start_with_fast_travel:
             self.give_item('Prelude of Light')
             self.give_item('Serenade of Water')
             self.give_item('Farores Wind')
@@ -325,7 +292,7 @@ class WorldDistribution(object):
         if world_id is None:
             predicate = remove_matcher
         else:
-            predicate = lambda item: item.world.id == world_id and remove_matcher(item.name)
+            predicate = lambda item: item.world_id == world_id and remove_matcher(item.name)
 
         for i in range(count):
             removed_item = pull_random_element(pools, predicate, ignore_pools=ignore_pools)
@@ -414,7 +381,6 @@ class WorldDistribution(object):
 
         return pool
 
-
     def set_complete_itempool(self, pool):
         self.item_pool = {}
         for item in pool:
@@ -425,32 +391,35 @@ class WorldDistribution(object):
             else:
                 self.item_pool[item.name] = ItemPoolRecord()
 
-
-    def collect_starters(self, state):
+    def collect_starters(self, world):
         for (name, record) in self.starting_items.items():
             for _ in range(record.count):
                 try:
-                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name)
+                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name, world)
                 except KeyError:
                     continue
-                state.collect(item)
+                world.state.collect(item)
 
+    def pool_replace_item(self, item_pools, item_group, player_id, new_item, world):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
 
-    def pool_replace_item(self, item_pools, item_group, player_id, new_item, worlds):
         removed_item = self.pool_remove_item(item_pools, item_group, 1, world_id=player_id)[0]
         item_matcher = lambda item: pattern_matcher(new_item)(item.name)
         if self.item_pool[removed_item.name].count > 1:
             self.item_pool[removed_item.name].count -= 1
         else:
             del self.item_pool[removed_item.name]
-        return random.choice(list(ItemIterator(item_matcher, worlds[player_id])))
+        return random.choice(list(ItemIterator(item_matcher, world)))
 
+    def set_shuffled_entrances(self, world, entrance_pools, target_entrance_pools, locations_to_ensure_reachable, itempool):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
 
-    def set_shuffled_entrances(self, worlds, entrance_pools, target_entrance_pools, locations_to_ensure_reachable, itempool):
         for (name, record) in self.entrances.items():
             if record.region is None:
                 continue
-            if not worlds[self.id].get_entrance(name):
+            if not world.get_entrance(name):
                 raise RuntimeError('Unknown entrance in world %d: %s' % (self.id + 1, name))
 
             entrance_found = False
@@ -469,10 +438,10 @@ class WorldDistribution(object):
 
                 target_region = record.region
 
-                matched_targets_to_region = list(filter(lambda target: target.connected_region and target.connected_region.name == target_region, 
+                matched_targets_to_region = list(filter(lambda target: target.connected_region and target.connected_region.name == target_region,
                                                         target_entrance_pools[pool_type]))
                 if not matched_targets_to_region:
-                    raise RuntimeError('No entrance found to replace with %s that leads to %s in world %d' % 
+                    raise RuntimeError('No entrance found to replace with %s that leads to %s in world %d' %
                                                 (matched_entrance, target_region, self.id + 1))
 
                 if matched_entrance.type in ['Overworld', 'OwlDrop']:
@@ -480,22 +449,22 @@ class WorldDistribution(object):
                     try:
                         matched_target = next(filter(lambda target: target.replaces.parent_region.name == target_parent, matched_targets_to_region))
                     except StopIteration:
-                        raise RuntimeError('No entrance found to replace with %s that leads to %s from %s in world %d' % 
+                        raise RuntimeError('No entrance found to replace with %s that leads to %s from %s in world %d' %
                                                 (matched_entrance, target_region, target_parent, self.id + 1))
                 else:
                     matched_target = matched_targets_to_region[0]
                     target_parent = matched_target.parent_region.name
 
                 if matched_target.connected_region == None:
-                    raise RuntimeError('Entrance leading to %s from %s is already shuffled in world %d' % 
+                    raise RuntimeError('Entrance leading to %s from %s is already shuffled in world %d' %
                                             (target_region, target_parent, self.id + 1))
 
                 change_connections(matched_entrance, matched_target)
 
                 try:
-                    validate_worlds(worlds, None, locations_to_ensure_reachable, itempool)
+                    validate_worlds(world, None, locations_to_ensure_reachable, itempool)
                 except EntranceShuffleError as error:
-                    raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' % 
+                    raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' %
                                             (matched_entrance, matched_entrance.connected_region, self.id + 1, error))
 
                 confirm_replacement(matched_entrance, matched_target)
@@ -532,8 +501,10 @@ class WorldDistribution(object):
         return count
 
 
-    def fill(self, window, worlds, location_pools, item_pools):
-        world = worlds[self.id]
+    def fill(self, window, world, location_pools, item_pools):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
         locations = {}
         if self.locations:
             locations = {loc: self.locations[loc] for loc in random.sample(self.locations.keys(), len(self.locations))}
@@ -544,12 +515,12 @@ class WorldDistribution(object):
                         continue
                     item = None
                     if starting_item in item_groups['Bottle']:
-                        item = self.pool_replace_item(item_pools, "#Bottle", self.id, "#Junk", worlds)
+                        item = self.pool_replace_item(item_pools, "#Bottle", self.id, "#Junk", world)
                     elif starting_item in item_groups['AdultTrade']:
-                        item = self.pool_replace_item(item_pools, "#AdultTrade", self.id, "#Junk", worlds)
+                        item = self.pool_replace_item(item_pools, "#AdultTrade", self.id, "#Junk", world)
                     elif IsItem(starting_item):
                         try:
-                            item = self.pool_replace_item(item_pools, starting_item, self.id, "#Junk", worlds)
+                            item = self.pool_replace_item(item_pools, starting_item, self.id, "#Junk", world)
                         except KeyError:
                             pass  # If a normal item exceeds the item pool count, continue.
                 except KeyError:
@@ -588,14 +559,14 @@ class WorldDistribution(object):
             if record.item in item_groups['DungeonReward']:
                 raise RuntimeError('Cannot place dungeon reward %s in world %d in location %s.' % (record.item, self.id + 1, location_name))
 
-            if record.item == '#Junk' and location.type == 'Song' and not world.shuffle_song_items:
+            if record.item == '#Junk' and location.type == 'Song' and not world.settings.shuffle_song_items:
                 record.item = '#JunkSong'
 
             ignore_pools = None
             is_invert = pattern_matcher(record.item)('!')
-            if is_invert and location.type != 'Song' and not world.shuffle_song_items:
+            if is_invert and location.type != 'Song' and not world.settings.shuffle_song_items:
                 ignore_pools = [2]
-            if is_invert and location.type == 'Song' and not world.shuffle_song_items:
+            if is_invert and location.type == 'Song' and not world.settings.shuffle_song_items:
                 ignore_pools = [i for i in range(len(item_pools)) if i != 2]
 
             try:
@@ -703,7 +674,7 @@ class WorldDistribution(object):
 
 class Distribution(object):
     def __init__(self, settings, src_dict={}):
-        self.settings = settings
+        self._settings_copy = settings
         self.world_dists = [WorldDistribution(self, id) for id in range(settings.world_count)]
         self.update(src_dict, update_all=True)
 
@@ -717,13 +688,16 @@ class Distribution(object):
                 print('Cannot place item at excluded location because it already has an item defined in the Distribution.')
 
 
-    def fill(self, window, worlds, location_pools, item_pools):
-        search = Search.max_explore([world.state for world in worlds], itertools.chain.from_iterable(item_pools))
+    def fill(self, window, world, location_pools, item_pools):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
+        search = Search.max_explore([world.state], itertools.chain.from_iterable(item_pools))
         if not search.can_beat_game(False):
             raise FillError('Item pool does not contain items required to beat game!')
 
         for world_dist in self.world_dists:
-            world_dist.fill(window, worlds, location_pools, item_pools)
+            world_dist.fill(window, world, location_pools, item_pools)
 
 
     def cloak(self, worlds, location_pools, model_pools):
@@ -756,7 +730,7 @@ class Distribution(object):
             '_settings': src_dict.get('settings', {}),
         }
 
-        self.settings.__dict__.update(update_dict['_settings'])
+        self._settings_copy.__dict__.update(update_dict['_settings'])
         if 'settings' in src_dict:
             src_dict['_settings'] = src_dict['settings']
             del src_dict['settings']
@@ -786,14 +760,14 @@ class Distribution(object):
         self_dict = {
             ':version': __version__,
             'file_hash': CollapseList(self.file_hash),
-            ':seed': self.settings.seed,
-            ':settings_string': self.settings.settings_string,
-            'settings': self.settings.to_json(),
+            ':seed': self._settings_copy.seed,
+            ':settings_string': self._settings_copy.settings_string,
+            'settings': self._settings_copy.to_json(),
         }
 
         if spoiler:
             world_dist_dicts = [world_dist.to_json() for world_dist in self.world_dists]
-            if self.settings.world_count > 1:
+            if self._settings_copy.world_count > 1:
                 for k in per_world_keys:
                     self_dict[k] = {}
                     for id, world_dist_dict in enumerate(world_dist_dicts):
@@ -841,7 +815,6 @@ class Distribution(object):
 
         for world in spoiler.worlds:
             world_dist = self.world_dists[world.id]
-            world_dist.randomized_settings = {randomized_item: getattr(world, randomized_item) for randomized_item in world.randomized_list}
             world_dist.dungeons = {dung: DungeonRecord({ 'mq': world.dungeon_mq[dung] }) for dung in world.dungeon_mq}
             world_dist.trials = {trial: TrialRecord({ 'active': not world.skipped_trials[trial] }) for trial in world.skipped_trials}
             world_dist.entrances = {ent.name: EntranceRecord.from_entrance(ent) for ent in spoiler.entrances[world.id]}

@@ -44,11 +44,11 @@ class Search(object):
 
     def collect_all(self, itempool):
         for item in itempool:
-            self.state_list[item.world.id].collect(item)
+            self.state_list[item.world_id].collect(item)
 
 
     def collect(self, item):
-        self.state_list[item.world.id].collect(item)
+        self.state_list[item.world_id].collect(item)
 
 
     @classmethod
@@ -82,7 +82,7 @@ class Search(object):
     # Drops the item from its respective state.
     # Has no effect on cache!
     def uncollect(self, item):
-        self.state_list[item.world.id].remove(item)
+        self.state_list[item.world_id].remove(item)
 
 
     # Resets the sphere cache to the first entry only.
