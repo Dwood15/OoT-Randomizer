@@ -143,7 +143,7 @@ def generate(settings, window):
         settings.distribution.configure_triforce_hunt(worlds)
 
     logger.info('Setting Entrances.')
-    set_entrances(worlds)
+    set_entrances(worlds[0])
 
     window.update_status('Placing the Items')
     logger.info('Fill the world.')

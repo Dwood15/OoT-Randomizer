@@ -412,11 +412,14 @@ class WorldDistribution(object):
             del self.item_pool[removed_item.name]
         return random.choice(list(ItemIterator(item_matcher, world)))
 
-    def set_shuffled_entrances(self, worlds, entrance_pools, target_entrance_pools, locations_to_ensure_reachable, itempool):
+    def set_shuffled_entrances(self, world, entrance_pools, target_entrance_pools, locations_to_ensure_reachable, itempool):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
         for (name, record) in self.entrances.items():
             if record.region is None:
                 continue
-            if not worlds[self.id].get_entrance(name):
+            if not world.get_entrance(name):
                 raise RuntimeError('Unknown entrance in world %d: %s' % (self.id + 1, name))
 
             entrance_found = False
@@ -459,7 +462,7 @@ class WorldDistribution(object):
                 change_connections(matched_entrance, matched_target)
 
                 try:
-                    validate_worlds(worlds, None, locations_to_ensure_reachable, itempool)
+                    validate_worlds(world, None, locations_to_ensure_reachable, itempool)
                 except EntranceShuffleError as error:
                     raise RuntimeError('Cannot connect %s To %s in world %d (Reason: %s)' %
                                             (matched_entrance, matched_entrance.connected_region, self.id + 1, error))

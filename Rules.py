@@ -128,20 +128,20 @@ def set_shop_rules(world):
 
 # This function should be ran once after setting up entrances and before placing items
 # The goal is to automatically set item rules based on age requirements in case entrances were shuffled
-def set_entrances_based_rules(worlds):
+def set_entrances_based_rules(world):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
 
     # Use the states with all items available in the pools for this seed
-    complete_itempool = [item for world in worlds for item in world.get_itempool_with_dungeon_items()]
-    search = Search([world.state for world in worlds])
+    complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
+    search = Search([world.state])
     search.collect_all(complete_itempool)
     search.collect_locations()
 
-    for world in worlds:
-        for location in world.get_locations():
-
-            if location.type == 'Shop':
-                # If All Locations Reachable is on, prevent shops only ever reachable as child from containing Buy Goron Tunic and Buy Zora Tunic items
-                if not world.settings.check_beatable_only:
-                    if not search.can_reach(location.parent_region, age='adult'):
-                        forbid_item(location, 'Buy Goron Tunic')
-                        forbid_item(location, 'Buy Zora Tunic')
+    for location in world.get_locations():
+        if location.type == 'Shop':
+            # If All Locations Reachable is on, prevent shops only ever reachable as child from containing Buy Goron Tunic and Buy Zora Tunic items
+            if not world.settings.check_beatable_only:
+                if not search.can_reach(location.parent_region, age='adult'):
+                    forbid_item(location, 'Buy Goron Tunic')
+                    forbid_item(location, 'Buy Zora Tunic')
