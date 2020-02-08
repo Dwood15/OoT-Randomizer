@@ -357,11 +357,10 @@ class Rule_AST_Transformer(ast.NodeTransformer):
 
 
     # Requires the target regions have been defined in the world.
-    def create_delayed_rules(self):
+    def create_delayed_rules(self, world):
         for region_name, node, subrule_name in self.delayed_rules:
-            region = self.world.get_region(region_name)
-            event = Location(subrule_name, type='Event', parent=region, internal=True)
-            event.world = self.world
+            region = world.get_region(region_name)
+            event = Location(subrule_name, type='Event', parent=region, internal=True, world=world)
 
             self.current_spot = event
             # This could, in theory, create further subrules.
@@ -369,7 +368,7 @@ class Rule_AST_Transformer(ast.NodeTransformer):
             event.set_rule(event.access_rule)
             region.locations.append(event)
 
-            MakeEventItem(subrule_name, event)
+            MakeEventItem(subrule_name, event, world=world)
         # Safeguard in case this is called multiple times per world
         self.delayed_rules.clear()
 

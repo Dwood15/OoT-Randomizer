@@ -3,7 +3,7 @@ import re
 import math
 import json
 from Cosmetics import get_tunic_color_options, get_navi_color_options, get_sword_color_options, get_gauntlet_color_options, get_magic_color_options, get_heart_color_options
-from Location import LocationIterator
+from Location import UILocationIterator
 import Sounds as sfx
 from Utils import data_path
 
@@ -2292,7 +2292,7 @@ setting_infos = [
         gui_text       = "Exclude Locations",
         gui_type       = "SearchBox",
         shared         = True,
-        choices        = [location.name for location in LocationIterator(lambda loc: loc.filter_tags is not None)],
+        choices        = [location.name for location in UILocationIterator(lambda loc: loc.filter_tags is not None)],
         default        = [],
         gui_tooltip    = '''
             Prevent locations from being required.
@@ -2304,7 +2304,7 @@ setting_infos = [
             disable both versions if that is the intent.
         ''',
         gui_params     = {
-            'filterdata': {location.name: location.filter_tags for location in LocationIterator(lambda loc: loc.filter_tags is not None)},
+            'filterdata': {location.name: location.filter_tags for location in UILocationIterator(lambda loc: loc.filter_tags is not None)},
         }
     ),
     Setting_Info(

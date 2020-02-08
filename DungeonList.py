@@ -119,13 +119,13 @@ def create_dungeons(world):
         
         world.load_regions_from_json(dungeon_json)
 
-        boss_keys = ItemFactory(['Boss Key (%s)' % name] * dungeon_info['boss_key'], world)
+        boss_keys = ItemFactory(['Boss Key (%s)' % name] * dungeon_info['boss_key'], world.id)
         if not world.dungeon_mq[dungeon_info['name']]:
-            small_keys = ItemFactory(['Small Key (%s)' % name] * dungeon_info['small_key'], world)
+            small_keys = ItemFactory(['Small Key (%s)' % name] * dungeon_info['small_key'], world.id)
         else:
-            small_keys = ItemFactory(['Small Key (%s)' % name] * dungeon_info['small_key_mq'], world)
+            small_keys = ItemFactory(['Small Key (%s)' % name] * dungeon_info['small_key_mq'], world.id)
         dungeon_items = ItemFactory(['Map (%s)' % name, 
-                                     'Compass (%s)' % name] * dungeon_info['dungeon_item'], world)
+                                     'Compass (%s)' % name] * dungeon_info['dungeon_item'], world.id)
 
         world.dungeons.append(Dungeon(world, name, hint, boss_keys, small_keys, dungeon_items))
 

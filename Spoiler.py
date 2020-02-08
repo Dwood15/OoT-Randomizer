@@ -1,10 +1,5 @@
-from version import __version__
-from collections import OrderedDict
-from Item import Item
-from Hints import gossipLocations
-import re
 import random
-import json
+from collections import OrderedDict
 
 HASH_ICONS = [
     'Deku Stick',
@@ -41,32 +36,34 @@ HASH_ICONS = [
     'Big Magic',
 ]
 
+
 class Spoiler(object):
 
-    def __init__(self, worlds):
-        self.worlds = worlds
-        self.settings = worlds[0].settings
+    def __init__(self, world):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
+        self.worlds = [world]
+        self.settings = world.settings
         self.playthrough = {}
         self.entrance_playthrough = {}
         self.locations = {}
         self.entrances = []
         self.metadata = {}
         self.required_locations = {}
-        self.hints = {world.id: {} for world in worlds}
+        self.hints = {world.id: {}}
         self.file_hash = []
-
 
     def build_file_hash(self):
         dist_file_hash = self.settings.distribution.file_hash
         for i in range(5):
-            self.file_hash.append(random.randint(0,31) if dist_file_hash[i] is None else HASH_ICONS.index(dist_file_hash[i]))
-
+            self.file_hash.append(random.randint(0, 31) if dist_file_hash[i] is None else HASH_ICONS.index(dist_file_hash[i]))
 
     def parse_data(self):
         for (sphere_nr, sphere) in self.playthrough.items():
             sorted_sphere = [location for location in sphere]
             sort_order = {"Song": 0, "Boss": -1}
-            sorted_sphere.sort(key=lambda item: (item.world.id * 10) + sort_order.get(item.type, 1))
+            sorted_sphere.sort(key=lambda item: (item.world_id * 10) + sort_order.get(item.type, 1))
             self.playthrough[sphere_nr] = sorted_sphere
 
         self.locations = {}

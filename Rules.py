@@ -19,9 +19,9 @@ def set_rules(world):
             if location.type == 'Song':
                 # allow junk items, but songs must still have matching world
                 add_item_rule(location, lambda location, item:
-                    ((location.world.distribution.song_as_items or world.start_with_fast_travel)
+                    ((world.distribution.song_as_items or world.start_with_fast_travel)
                         and item.type != 'Song')
-                    or (item.type == 'Song' and item.world_id == location.world.id))
+                    or (item.type == 'Song'))
             else:
                 add_item_rule(location, lambda location, item: item.type != 'Song')
 
@@ -29,11 +29,11 @@ def set_rules(world):
             if location.name in world.shop_prices:
                 add_item_rule(location, lambda location, item: item.type != 'Shop')
                 location.price = world.shop_prices[location.name]
-                location.add_rule(create_shop_rule(location))
+                location.add_rule(create_shop_rule(location, world))
             else:
-                add_item_rule(location, lambda location, item: item.type == 'Shop' and item.world_id == location.world.id)
+                add_item_rule(location, lambda location, item: item.type == 'Shop' and item.world_id == location.world_id)
         elif 'Deku Scrub' in location.name:
-            location.add_rule(create_shop_rule(location))
+            location.add_rule(create_shop_rule(location, world))
         else:
             add_item_rule(location, lambda location, item: item.type != 'Shop')
 
@@ -54,7 +54,7 @@ def set_rules(world):
             logger.debug('Tried to disable location that does not exist: %s' % location)
 
 
-def create_shop_rule(location):
+def create_shop_rule(location, world):
     def required_wallets(price):
         if price > 500:
             return 3
@@ -63,7 +63,7 @@ def create_shop_rule(location):
         if price > 99:
             return 1
         return 0
-    return location.world.parser.parse_rule('(Progressive_Wallet, %d)' % required_wallets(location.price))
+    return world.parser.parse_rule('(Progressive_Wallet, %d)' % required_wallets(location.price))
 
 
 def set_rule(spot, rule):

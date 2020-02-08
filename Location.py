@@ -5,7 +5,7 @@ from enum import Enum
 
 class Location(object):
 
-    def __init__(self, name='', address=None, address2=None, default=None, type='Chest', scene=None, parent=None, filter_tags=None, internal=False):
+    def __init__(self, name='', address=None, address2=None, default=None, type='Chest', scene=None, parent=None, filter_tags=None, internal=False, world=None, ui=False, world_id=None):
         self.name = name
         self.parent_region = parent
         self.item = None
@@ -22,16 +22,22 @@ class Location(object):
         self.locked = False
         self.price = None
         self.minor_only = False
-        self.world = None
         self.disabled = DisableType.ENABLED
         if filter_tags is None:
             self.filter_tags = None
         else:
             self.filter_tags = list(filter_tags)
 
+        if not ui:
+            if world is None and world_id is None:
+                raise Exception("non-ui usage of Location has no world!")
+            elif world_id is not None:
+                self.world_id = world_id
+            else:
+                self.world_id = world.id
+
     def copy(self, new_region):
-        new_location = Location(self.name, self.address, self.address2, self.default, self.type, self.scene, new_region, self.filter_tags)
-        new_location.world = new_region.world
+        new_location = Location(self.name, self.address, self.address2, self.default, self.type, self.scene, new_region, self.filter_tags, world_id=self.world_id)
         if self.item:
             new_location.item = self.item.copy(new_region.world)
             new_location.item.location = new_location
@@ -45,6 +51,10 @@ class Location(object):
 
         return new_location
 
+    @property
+    def world(self):
+        raise Exception("LOCATION WORLDSTARRRRR")
+
     def add_rule(self, lambda_rule):
         self.access_rules.append(lambda_rule)
         self.access_rule = lambda state, **kwargs: all(rule(state, **kwargs) for rule in self.access_rules)
@@ -53,8 +63,11 @@ class Location(object):
         self.access_rule = lambda_rule
         self.access_rules = [lambda_rule]
 
-    def can_fill(self, state, item, check_access=True):
-        if self.minor_only and item.majoritem:
+    def can_fill(self, state, item, check_access=True, settings=None):
+        if settings is None:
+            raise Exception("can fill settings unset entirely")
+
+        if self.minor_only and item.is_majoritem(settings):
             return False
         return (
             not self.is_disabled() and
@@ -74,11 +87,11 @@ class Location(object):
     # Can the player see what's placed at this location without collecting it?
     # Used to reduce JSON spoiler noise
 
-    def has_preview(self):
+    def has_preview(self, settings):
         if self.type in ('Collectable', 'BossHeart', 'GS Token', 'Shop'):
             return True
         if self.type == 'Chest':
-            return self.scene == 0x10 or self.world.correct_chest_sizes  # Treasure Chest Game Prize or CSMC
+            return self.scene == 0x10 or settings.correct_chest_sizes  # Treasure Chest Game Prize or CSMC
         if self.type == 'NPC':
             return self.scene in (0x4B, 0x51, 0x57) # Bombchu Bowling, Hyrule Field (OoT), Lake Hylia (RL/FA)
         return False
@@ -102,6 +115,9 @@ class Location(object):
 
 
 def LocationFactory(locations, world=None):
+    if world is None:
+        raise Exception("Location WORLD is NONE")
+
     ret = []
     singleton = False
     if isinstance(locations, str):
@@ -113,7 +129,7 @@ def LocationFactory(locations, world=None):
             if addresses is None:
                 addresses = (None, None)
             address, address2 = addresses
-            ret.append(Location(location, address, address2, default, type, scene, filter_tags=filter_tags))
+            ret.append(Location(location, address, address2, default, type, scene, filter_tags=filter_tags, world=world))
         else:
             raise KeyError('Unknown Location: %s', location)
 
@@ -128,6 +144,33 @@ def LocationIterator(predicate=lambda loc: True):
         if predicate(location):
             yield location
 
+
+def UILocationFactory(locations):
+    ret = []
+    singleton = False
+    if isinstance(locations, str):
+        locations = [locations]
+        singleton = True
+    for location in locations:
+        if location in location_table:
+            type, scene, default, addresses, filter_tags = location_table[location]
+            if addresses is None:
+                addresses = (None, None)
+            address, address2 = addresses
+            ret.append(Location(location, address, address2, default, type, scene, filter_tags=filter_tags, ui=True))
+        else:
+            raise KeyError('Unknown Location: %s', location)
+
+    if singleton:
+        return ret[0]
+    return ret
+
+
+def UILocationIterator(predicate=lambda loc: True):
+    for location_name in location_table:
+        location = UILocationFactory(location_name)
+        if predicate(location):
+            yield location
 
 def IsLocation(name):
     return name in location_table

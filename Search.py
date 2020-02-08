@@ -166,9 +166,9 @@ class Search(object):
                 if (loc not in visited_locations
                     # Check adult first; it's the most likely.
                     and (loc.parent_region in adult_regions
-                         and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='adult')
+                         and loc.access_rule(self.state_list[loc.world_id], spot=loc, age='adult')
                          or (loc.parent_region in child_regions
-                             and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='child')))):
+                             and loc.access_rule(self.state_list[loc.world_id], spot=loc, age='child')))):
                     had_reachable_locations = True
                     # Mark it visited for this algorithm
                     visited_locations.add(loc)
@@ -269,18 +269,22 @@ class Search(object):
     # Returns whether the given age can access the spot at this age and tod,
     # by checking whether the search has reached the containing region, and evaluating the spot's access rule.
     def spot_access(self, spot, age=None, tod=TimeOfDay.NONE):
+        can_reach_either = self.can_reach(spot.parent_region, age=age, tod=tod)
         if age == 'adult' or age == 'child':
-            return (self.can_reach(spot.parent_region, age=age, tod=tod)
-                    and spot.access_rule(self.state_list[spot.world.id], spot=spot, age=age, tod=tod))
+            return (can_reach_either
+                    and spot.access_rule(self.state_list[0], spot=spot, age=age, tod=tod))
         elif age == 'both':
-            return (self.can_reach(spot.parent_region, age=age, tod=tod)
-                    and spot.access_rule(self.state_list[spot.world.id], spot=spot, age='adult', tod=tod)
-                    and spot.access_rule(self.state_list[spot.world.id], spot=spot, age='child', tod=tod))
+            return (can_reach_either
+                    and spot.access_rule(self.state_list[0], spot=spot, age='adult', tod=tod)
+                    and spot.access_rule(self.state_list[0], spot=spot, age='child', tod=tod))
         else:
-            return (self.can_reach(spot.parent_region, age='adult', tod=tod)
-                    and spot.access_rule(self.state_list[spot.world.id], spot=spot, age='adult', tod=tod)) or (
-                            self.can_reach(spot.parent_region, age='child', tod=tod)
-                            and spot.access_rule(self.state_list[spot.world.id], spot=spot, age='child', tod=tod))
+            adult_can_reach = self.can_reach(spot.parent_region, age='adult', tod=tod)
+            adult_can_access = spot.access_rule(self.state_list[0], spot=spot, age='adult', tod=tod)
+
+            child_can_reach = self.can_reach(spot.parent_region, age='child', tod=tod)
+            child_can_access = spot.access_rule(self.state_list[0], spot=spot, age='child', tod=tod)
+
+            return (adult_can_reach and adult_can_access) or (child_can_access and child_can_reach)
 
 
 class RewindableSearch(Search):

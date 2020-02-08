@@ -71,7 +71,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     fake_items = []
     model_items = []
     if world.settings.ice_trap_appearance == 'major_only':
-        model_items = [item for item in itempool if item.majoritem]
+        model_items = [item for item in itempool if item.is_majoritem(world.settings)]
         if len(model_items) == 0: # All major items were somehow removed from the pool (can happen in plando)
             model_items = ItemFactory(major_items, world)
     elif world.settings.ice_trap_appearance == 'junk_only':
@@ -156,7 +156,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     # No restrictions at all. Places them completely randomly. Since they
     # cannot affect the beatability, we don't need to check them
     logger.info('Placing the rest of the items.')
-    fast_fill(window, fill_locations, restitempool)
+    fast_fill(window, world, fill_locations, restitempool)
 
     # Log unplaced item/location warnings
     for item in progitempool + prioitempool + restitempool:
@@ -227,8 +227,8 @@ def fill_dungeon_unique_item(window, world, search, fill_locations, itempool):
     # token items, or dungeon items as a major item. itempool at this
     # point should only be able to have tokens of those restrictions
     # since the rest are already placed.
-    major_items = [item for item in itempool if item.majoritem]
-    minor_items = [item for item in itempool if not item.majoritem]
+    major_items = [item for item in itempool if item.is_majoritem(world.settings)]
+    minor_items = [item for item in itempool if not item.is_majoritem(world.settings)]
 
     #TEMPORARY
     worlds = [world]
@@ -283,8 +283,8 @@ def fill_ownworld_restrictive(window, world, search, locations, ownpool, itempoo
     unplaced_prizes = [item for item in ownpool if item.name not in placed_prizes]
     empty_locations = [loc for loc in locations if loc.item is None]
 
-    prizepool_dict = {world.id: [item for item in unplaced_prizes if item.world_id == world.id]}
-    prize_locs_dict = {world.id: [loc for loc in empty_locations if loc.world.id == world.id]}
+    prizepool_dict = {world.id: [item for item in unplaced_prizes]}
+    prize_locs_dict = {world.id: [loc for loc in empty_locations]}
 
     # Shop item being sent in to this method are tied to their own world.
     # Therefore, let's do this one world at a time. We do this to help
@@ -353,7 +353,7 @@ def fill_restrictive(window, world, base_search, locations, itempool, count=-1):
 
         # get an item and remove it from the itempool
         item_to_place = itempool.pop()
-        if item_to_place.majoritem:
+        if item_to_place.is_majoritem(world.settings):
             l2cations = [l for l in locations if not l.minor_only]
         else:
             l2cations = locations
@@ -380,32 +380,7 @@ def fill_restrictive(window, world, base_search, locations, itempool, count=-1):
         # in the world we are placing it (possibly checking for reachability)
         spot_to_fill = None
         for location in l2cations:
-            if location.can_fill(max_search.state_list[location.world.id], item_to_place, perform_access_check):
-                # for multiworld, make it so that the location is also reachable
-                # in the world the item is for. This is to prevent early restrictions
-                # in one world being placed late in another world. If this is not
-                # done then one player may be waiting a long time for other players.
-                if location.world.id != item_to_place.world_id:
-                    try:
-                        source_location = item_to_place.world.get_location(location.name)
-                        if not source_location.can_fill(max_search.state_list[item_to_place.world.id], item_to_place, perform_access_check):
-                            # location wasn't reachable in item's world, so skip it
-                            continue
-                    except KeyError:
-                        # This location doesn't exist in the other world, let's look elsewhere.
-                        # Check access to whatever parent region exists in the other world.
-                        can_reach = True
-                        parent_region = location.parent_region
-                        while parent_region:
-                            try:
-                                source_region = item_to_place.world.get_region(parent_region.name)
-                                can_reach = max_search.can_reach(source_region)
-                                break
-                            except KeyError:
-                                parent_region = parent_region.entrances[0].parent_region
-                        if not can_reach:
-                            continue
-
+            if location.can_fill(max_search.state_list[location.world_id], item_to_place, perform_access_check, settings=world.settings):
                 if location.disabled == DisableType.PENDING:
                     if not max_search.can_beat_game(False):
                         continue
@@ -428,7 +403,7 @@ def fill_restrictive(window, world, base_search, locations, itempool, count=-1):
                 raise FillError('Game unbeatable: No more spots to place %s [World %d] from %d locations (%d total); %d other items left to place, plus %d skipped' % (item_to_place, item_to_place.world_id + 1, len(l2cations), len(locations), len(itempool), len(unplaced_items)))
 
         # Place the item in the world and continue
-        spot_to_fill.world.push_item(spot_to_fill, item_to_place)
+        world.push_item(spot_to_fill, item_to_place)
         locations.remove(spot_to_fill)
         window.fillcount += 1
         window.update_progress(5 + ((window.fillcount / window.locationcount) * 30))
@@ -481,11 +456,11 @@ def fill_restrictive_fast(window, world, locations, itempool):
 # this places item in item_pool completely randomly into
 # fill_locations. There is no checks for validity since
 # there should be none for these remaining items
-def fast_fill(window, locations, itempool):
+def fast_fill(window, world, locations, itempool):
     random.shuffle(locations)
     while itempool and locations:
         spot_to_fill = locations.pop()
         item_to_place = itempool.pop()
-        spot_to_fill.world.push_item(spot_to_fill, item_to_place)
+        world.push_item(spot_to_fill, item_to_place)
         window.fillcount += 1
         window.update_progress(5 + ((window.fillcount / window.locationcount) * 30))

@@ -133,20 +133,20 @@ class State(object):
     @staticmethod
     def update_required_items(spoiler):
         worlds = spoiler.worlds
-
+        world = worlds[0]
         # get list of all of the progressive items that can appear in hints
         # all_locations: all progressive items. have to collect from these
         # item_locations: only the ones that should appear as "required"/WotH
-        all_locations = [location for world in worlds for location in world.get_filled_locations()]
+        all_locations = [location for location in world.get_filled_locations()]
         # Set to test inclusion against
-        item_locations = {location for location in all_locations if location.item.majoritem and not location.locked and location.item.name != 'Triforce Piece'}
+        item_locations = {location for location in all_locations if location.item.is_majoritem(world.settings) and not location.locked and location.item.name != 'Triforce Piece'}
 
         # if the playthrough was generated, filter the list of locations to the
         # locations in the playthrough. The required locations is a subset of these
         # locations. Can't use the locations directly since they are location to the
         # copied spoiler world, so must compare via name and world id
         if spoiler.playthrough:
-            translate = lambda loc: worlds[loc.world.id].get_location(loc.name)
+            translate = lambda loc: world.get_location(loc.name)
             spoiler_locations = set(map(translate, itertools.chain.from_iterable(spoiler.playthrough.values())))
             item_locations &= spoiler_locations
 
@@ -167,6 +167,5 @@ class State(object):
 
         # Filter the required location to only include location in the world
         required_locations_dict = {}
-        for world in worlds:
-            required_locations_dict[world.id] = list(filter(lambda location: location.world.id == world.id, required_locations))
+        required_locations_dict[world.id] = list(filter(lambda location: location.world_id == world.id, required_locations))
         spoiler.required_locations = required_locations_dict

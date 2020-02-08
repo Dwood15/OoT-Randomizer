@@ -114,10 +114,10 @@ def add_hint(spoiler, world, IDs, gossip_text, count, location=None, force_reach
             if gossipLocations[id].reachable:
                 stone_name = gossipLocations[id].location
                 stone_location = world.get_location(stone_name)
-                if not first or can_reach_stone(spoiler.worlds, stone_location, location):
+                if not first or can_reach_stone(spoiler.worlds[0], stone_location, location):
                     if first and location:
                         # just name the event item after the gossip stone directly
-                        MakeEventItem(stone_name, stone_location)
+                        MakeEventItem(stone_name, stone_location, world=world)
                         # This mostly guarantees that we don't lock the player out of an item hint
                         # by establishing a (hint -> item) -> hint -> item -> (first hint) loop
                         location.add_rule(world.parser.parse_rule(repr(stone_name)))
@@ -166,17 +166,19 @@ def add_hint(spoiler, world, IDs, gossip_text, count, location=None, force_reach
     return success
 
 
-def can_reach_stone(worlds, stone_location, location):
-    if location == None:
+def can_reach_stone(world, stone_location, location):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
+
+    if not location:
         return True
 
     old_item = location.item
     location.item = None
-    search = Search.max_explore([world.state for world in worlds])
+    search = Search.max_explore([world.state])
     location.item = old_item
 
-    return (search.spot_access(stone_location)
-            and search.state_list[location.world.id].guarantee_hint())
+    return (search.spot_access(stone_location) and search.state_list[0].guarantee_hint())
 
 
 def writeGossipStoneHints(spoiler, world, messages):
@@ -313,10 +315,11 @@ def is_not_checked(location, checked):
 
 
 def get_good_item_hint(spoiler, world, checked):
-    locations = [location for location in world.get_filled_locations()
-            if is_not_checked(location, checked) and \
-            location.item.majoritem and \
-            not location.locked]
+    locs = world.get_filled_locations()
+
+    locations = [location for location in locs
+            if is_not_checked(location, checked) and location.item.is_majoritem(world.settings) and not location.locked]
+
     if not locations:
         return None
 
@@ -527,24 +530,26 @@ hint_dist_sets = {
 }
 
 
-def buildGossipHints(spoiler, worlds):
+def buildGossipHints(spoiler, world):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
+
     checkedLocations = dict()
     # Add Light Arrow locations to "checked" locations if Ganondorf is reachable without it.
-    for world in worlds:
-        location = world.light_arrow_location
-        if location is None:
-            continue
-        # Didn't you know that Ganondorf is a gossip stone?
-        if can_reach_stone(worlds, world.get_location("Ganondorf Hint"), location):
-            light_arrow_world = location.world
-            if light_arrow_world.id not in checkedLocations:
-                checkedLocations[light_arrow_world.id] = set()
-            checkedLocations[light_arrow_world.id].add(location.name)
+    location = world.light_arrow_location
+    if location is None:
+        raise Exception("LIGHT ARROW location is None?!?!!")
+
+    # Didn't you know that Ganondorf is a gossip stone?
+    if can_reach_stone(world, world.get_location("Ganondorf Hint"), location):
+        light_arrow_world = world
+        if light_arrow_world.id not in checkedLocations:
+            checkedLocations[light_arrow_world.id] = set()
+        checkedLocations[light_arrow_world.id].add(location.name)
 
     # Build all the hints.
-    for world in worlds:
-        world.update_useless_areas(spoiler)
-        buildWorldGossipHints(spoiler, world, checkedLocations.pop(world.id, None))
+    world.update_useless_areas(spoiler)
+    buildWorldGossipHints(spoiler, world, checkedLocations.pop(world.id, None))
 
 
 #builds out general hints based on location and whether an item is required or not

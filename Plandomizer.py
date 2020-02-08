@@ -131,13 +131,13 @@ class LocationRecord(SimpleRecord({'item': None, 'player': None, 'price': None, 
 
 
     @staticmethod
-    def from_item(item):
-        player = 1
+    def from_item(item, settings):
+        has_preview = item.location.has_preview(settings)
 
         return LocationRecord({
             'item': item.name,
-            'player': player,
-            'model': item.looks_like_item.name if item.looks_like_item is not None and item.location.has_preview() and can_cloak(item, item.looks_like_item) else None,
+            'player': 1,
+            'model': item.looks_like_item.name if item.looks_like_item is not None and has_preview and can_cloak(item, item.looks_like_item) else None,
             'price': item.location.price,
         })
 
@@ -395,7 +395,7 @@ class WorldDistribution(object):
         for (name, record) in self.starting_items.items():
             for _ in range(record.count):
                 try:
-                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name, world)
+                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name, world.id)
                 except KeyError:
                     continue
                 world.state.collect(item)
@@ -535,18 +535,18 @@ class WorldDistribution(object):
                         self.item_pool[item.name] = ItemPoolRecord({'type': 'set', 'count': 1})
                     else:
                         self.item_pool[item.name].count += 1
-                    item_pools[5].append(ItemFactory(item.name, world))
+                    item_pools[5].append(ItemFactory(item.name, world.id))
         for (location_name, record) in pattern_dict_items(locations, world.itempool, []):
             if record.item is None:
                 continue
 
             player_id = self.id if record.player is None else record.player - 1
 
-            location_matcher = lambda loc: loc.world.id == world.id and loc.name == location_name
+            location_matcher = lambda loc: loc.name == location_name
             location = pull_first_element(location_pools, location_matcher)
             if location is None:
                 try:
-                    location = LocationFactory(location_name)
+                    location = LocationFactory(location_name, world)
                 except KeyError:
                     raise RuntimeError('Unknown location in world %d: %s' % (world.id + 1, location_name))
                 if location.type == 'Boss':
@@ -580,17 +580,17 @@ class WorldDistribution(object):
                         raise RuntimeError('Too many shop buy items were added to world %d, and not enough shop buy items are available in the item pool to be removed.' % (self.id + 1))
                 elif record.item in item_groups['Bottle']:
                     try:
-                        item = self.pool_replace_item(item_pools, "#Bottle", player_id, record.item, worlds)
+                        item = self.pool_replace_item(item_pools, "#Bottle", player_id, record.item, world)
                     except KeyError:
                         raise RuntimeError('Too many bottles were added to world %d, and not enough bottles are available in the item pool to be removed.' % (self.id + 1))
                 elif record.item in item_groups['AdultTrade']:
                     try:
-                        item = self.pool_replace_item(item_pools, "#AdultTrade", player_id, record.item, worlds)
+                        item = self.pool_replace_item(item_pools, "#AdultTrade", player_id, record.item, world)
                     except KeyError:
                         raise RuntimeError('Too many adult trade items were added to world %d, and not enough adult trade items are available in the item pool to be removed.' % (self.id + 1))
                 else:
                     try:
-                        item = self.pool_replace_item(item_pools, "#Junk", player_id, record.item, worlds)
+                        item = self.pool_replace_item(item_pools, "#Junk", player_id, record.item, world)
                     except KeyError:
                         raise RuntimeError('Too many items were added to world %d, and not enough junk is available to be removed.' % (self.id + 1))
                 # Update item_pool
@@ -607,10 +607,10 @@ class WorldDistribution(object):
 
             if location.type == 'Song' and item.type != 'Song':
                 self.song_as_items = True
-            location.world.push_item(location, item, True)
+            world.push_item(location, item, True)
 
             if item.advancement:
-                search = Search.max_explore([world.state for world in worlds], itertools.chain.from_iterable(item_pools))
+                search = Search.max_explore([world.state], itertools.chain.from_iterable(item_pools))
                 if not search.can_beat_game(False):
                     raise FillError('%s in world %d is not reachable without %s in world %d!' % (location.name, self.id + 1, item.name, player_id + 1))
             window.fillcount += 1
@@ -705,21 +705,24 @@ class Distribution(object):
             world_dist.cloak(worlds, location_pools, model_pools)
 
 
-    def configure_triforce_hunt(self, worlds):
+    def configure_triforce_hunt(self, world):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
         total_count = 0
         total_starting_count = 0
-        for world in worlds:
-            world.triforce_count = world.distribution.item_pool['Triforce Piece'].count
-            if 'Triforce Piece' in world.distribution.starting_items:
-                world.triforce_count += world.distribution.starting_items['Triforce Piece'].count
-                total_starting_count += world.distribution.starting_items['Triforce Piece'].count
-            total_count += world.triforce_count
 
-        if total_count < worlds[0].triforce_goal:
-            raise RuntimeError('Not enough Triforce Pieces in the worlds. There should be at least %d and there are only %d.' % (worlds[0].triforce_goal, total_count))
+        world.triforce_count = world.distribution.item_pool['Triforce Piece'].count
+        if 'Triforce Piece' in world.distribution.starting_items:
+            world.triforce_count += world.distribution.starting_items['Triforce Piece'].count
+            total_starting_count += world.distribution.starting_items['Triforce Piece'].count
+        total_count += world.triforce_count
 
-        if total_starting_count >= worlds[0].triforce_goal:
-            raise RuntimeError('Too many Triforce Pieces in starting items. There should be at most %d and there are %d.' % (worlds[0].triforce_goal - 1, total_starting_count))
+        if total_count < world.triforce_goal:
+            raise RuntimeError('Not enough Triforce Pieces in the worlds. There should be at least %d and there are only %d.' % (world.triforce_goal, total_count))
+
+        if total_starting_count >= world.triforce_goal:
+            raise RuntimeError('Too many Triforce Pieces in starting items. There should be at most %d and there are %d.' % (world.triforce_goal - 1, total_starting_count))
 
 
     def update(self, src_dict, update_all=False):
@@ -818,8 +821,8 @@ class Distribution(object):
             world_dist.dungeons = {dung: DungeonRecord({ 'mq': world.dungeon_mq[dung] }) for dung in world.dungeon_mq}
             world_dist.trials = {trial: TrialRecord({ 'active': not world.skipped_trials[trial] }) for trial in world.skipped_trials}
             world_dist.entrances = {ent.name: EntranceRecord.from_entrance(ent) for ent in spoiler.entrances[world.id]}
-            world_dist.locations = {loc: LocationRecord.from_item(item) for (loc, item) in spoiler.locations[world.id].items()}
-            world_dist.woth_locations = {loc.name: LocationRecord.from_item(loc.item) for loc in spoiler.required_locations[world.id]}
+            world_dist.locations = {loc: LocationRecord.from_item(item, world.settings) for (loc, item) in spoiler.locations[world.id].items()}
+            world_dist.woth_locations = {loc.name: LocationRecord.from_item(loc.item, world.settings) for loc in spoiler.required_locations[world.id]}
             world_dist.barren_regions = [*world.empty_areas]
             world_dist.gossip_stones = {gossipLocations[loc].name: GossipRecord(spoiler.hints[world.id][loc].to_json()) for loc in spoiler.hints[world.id]}
 
@@ -833,7 +836,7 @@ class Distribution(object):
                 else:
                     location_key = location.name
 
-                loc_rec_sphere[location_key] = LocationRecord.from_item(location.item)
+                loc_rec_sphere[location_key] = LocationRecord.from_item(location.item, spoiler.worlds[0].settings)
 
         self.entrance_playthrough = {}
         for (sphere_nr, sphere) in spoiler.entrance_playthrough.items():
@@ -988,6 +991,6 @@ def pull_all_elements(pools, predicate=lambda k:True, remove=True):
 def pull_item_or_location(pools, world, name, remove=True):
     if is_pattern(name):
         matcher = pattern_matcher(name)
-        return pull_random_element(pools, lambda e: e.world is world and matcher(e.name), remove)
+        return pull_random_element(pools, lambda e: matcher(e.name), remove)
     else:
-        return pull_first_element(pools, lambda e: e.world is world and e.name == name, remove)
+        return pull_first_element(pools, lambda e: e.name == name, remove)

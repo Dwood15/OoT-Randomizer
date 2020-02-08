@@ -103,54 +103,53 @@ def main(settings, window=dummy_window()):
 
 def generate(settings, window):
     logger = logging.getLogger('')
-    worlds = []
-    for i in range(0, settings.world_count):
-        worlds.append(World(i, settings))
 
+    world = World(0, settings)
+    id = 0
     window.update_status('Creating the Worlds')
-    for id, world in enumerate(worlds):
-        logger.info('Generating World %d.' % (id + 1))
 
-        window.update_progress(0 + 1*(id + 1)/settings.world_count)
-        logger.info('Creating Overworld')
+    logger.info('Generating World %d.' % (id + 1))
 
-        if settings.logic_rules == 'glitched':
-            overworld_data = os.path.join(data_path('Glitched World'), 'Overworld.json')
-        else:
-            overworld_data = os.path.join(data_path('World'), 'Overworld.json')
+    window.update_progress(0 + 1*(id + 1)/settings.world_count)
+    logger.info('Creating Overworld')
 
-        # Compile the json rules based on settings
-        world.load_regions_from_json(overworld_data)
-        create_dungeons(world)
-        world.create_internal_locations()
+    if settings.logic_rules == 'glitched':
+        overworld_data = os.path.join(data_path('Glitched World'), 'Overworld.json')
+    else:
+        overworld_data = os.path.join(data_path('World'), 'Overworld.json')
 
-        if settings.shopsanity != 'off':
-            world.random_shop_prices()
-        world.set_scrub_prices()
+    # Compile the json rules based on settings
+    world.load_regions_from_json(overworld_data)
+    create_dungeons(world)
+    world.create_internal_locations()
 
-        window.update_progress(0 + 4*(id + 1)/settings.world_count)
-        logger.info('Calculating Access Rules.')
-        set_rules(world)
+    if settings.shopsanity != 'off':
+        world.random_shop_prices()
+    world.set_scrub_prices()
 
-        window.update_progress(0 + 5*(id + 1)/settings.world_count)
-        logger.info('Generating Item Pool.')
-        generate_itempool(world)
-        set_shop_rules(world)
-        set_drop_location_names(world)
-        world.fill_bosses()
+    window.update_progress(0 + 4*(id + 1)/settings.world_count)
+    logger.info('Calculating Access Rules.')
+    set_rules(world)
+
+    window.update_progress(0 + 5*(id + 1)/settings.world_count)
+    logger.info('Generating Item Pool.')
+    generate_itempool(world)
+    set_shop_rules(world)
+    set_drop_location_names(world)
+    world.fill_bosses()
 
     if settings.triforce_hunt:
-        settings.distribution.configure_triforce_hunt(worlds)
+        settings.distribution.configure_triforce_hunt(world)
 
     logger.info('Setting Entrances.')
-    set_entrances(worlds[0])
+    set_entrances(world)
 
     window.update_status('Placing the Items')
     logger.info('Fill the world.')
-    distribute_items_restrictive(window, worlds[0])
+    distribute_items_restrictive(window, world)
     window.update_progress(35)
 
-    spoiler = Spoiler(worlds)
+    spoiler = Spoiler(world)
     if settings.create_spoiler:
         window.update_status('Calculating Spoiler Data')
         logger.info('Calculating playthrough.')
@@ -160,7 +159,7 @@ def generate(settings, window):
         window.update_status('Calculating Hint Data')
         logger.info('Calculating hint data.')
         State.update_required_items(spoiler)
-        buildGossipHints(spoiler, worlds)
+        buildGossipHints(spoiler, world)
         window.update_progress(55)
     spoiler.build_file_hash()
     return spoiler
@@ -502,7 +501,7 @@ def create_playthrough(spoiler):
         raise RuntimeError('Uncopied is broken too.')
     # create a copy as we will modify it
     worlds = [world.copy() for world in worlds]
-    Item.fix_worlds_after_copy(worlds)
+    Item.fix_worlds_after_copy()
 
     # if we only check for beatable, we can do this sanity check first before writing down spheres
     if worlds[0].settings.check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
@@ -535,7 +534,7 @@ def create_playthrough(spoiler):
         remaining_entrances -= accessed_entrances
         for location in collected:
             # Collect the item for the state world it is for
-            search.state_list[location.item.world_id].collect(location.item)
+            search.state_list[0].collect(location.item)
     logger.info('Collected %d spheres', len(collection_spheres))
 
     # Reduce each sphere in reverse order, by checking if the game is beatable
@@ -548,7 +547,7 @@ def create_playthrough(spoiler):
             old_item = location.item
 
             # Uncollect the item and location.
-            search.state_list[old_item.world_id].remove(old_item)
+            search.state_list[0].remove(old_item)
             search.unvisit(location)
 
             # Generic events might show up or not, as usual, but since we don't

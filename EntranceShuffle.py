@@ -593,7 +593,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
             raise EntranceShuffleError('Invalid starting area')
 
         # Check that a region where time passes is always reachable as both ages without having collected any items (except in closed forest)
-        time_travel_search = Search.with_items([world.state], [ItemFactory('Time Travel', world=world)])
+        time_travel_search = Search.with_items([world.state], [ItemFactory('Time Travel', world_id=world.id)])
 
         if not (any(region for region in time_travel_search.reachable_regions('child') if region.time_passes and region.world == world) and
                 any(region for region in time_travel_search.reachable_regions('adult') if region.time_passes and region.world == world)):
@@ -609,7 +609,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
         # The Big Poe Shop should always be accessible as adult without the need to use any bottles
         # Since we can't guarantee that items in the pool won't be placed behind bottles, we guarantee the access without using any items
         # This is important to ensure that players can never lock their only bottles by filling them with Big Poes they can't sell
-        no_items_time_travel_search = Search.with_items([State(world)], [ItemFactory('Time Travel', world=world)])
+        no_items_time_travel_search = Search.with_items([State(world)], [ItemFactory('Time Travel', world_id=world.id)])
 
         if not no_items_time_travel_search.can_reach(world.get_region('Castle Town Rupee Room'), age='adult'):
             raise EntranceShuffleError('Big Poe Shop access is not guaranteed as adult')

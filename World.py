@@ -180,24 +180,22 @@ class World(object):
                 new_region.provides_time = TimeOfDay.DAMPE
             if 'locations' in region:
                 for location, rule in region['locations'].items():
-                    new_location = LocationFactory(location)
+                    new_location = LocationFactory(location, self)
                     new_location.parent_region = new_region
                     new_location.rule_string = rule
                     if self.logic_rules != 'none':
                         self.parser.parse_spot_rule(new_location)
-                    new_location.world = self
                     new_region.locations.append(new_location)
             if 'events' in region:
                 for event, rule in region['events'].items():
                     # Allow duplicate placement of events
                     lname = '%s from %s' % (event, new_region.name)
-                    new_location = Location(lname, type='Event', parent=new_region)
+                    new_location = Location(lname, type='Event', parent=new_region, world=self)
                     new_location.rule_string = rule
                     if self.logic_rules != 'none':
                         self.parser.parse_spot_rule(new_location)
-                    new_location.world = self
                     new_region.locations.append(new_location)
-                    MakeEventItem(event, new_location)
+                    MakeEventItem(event, new_location, self)
             if 'exits' in region:
                 for exit, rule in region['exits'].items():
                     new_exit = Entrance('%s -> %s' % (new_region.name, exit), new_region)
@@ -209,7 +207,7 @@ class World(object):
             self.regions.append(new_region)
 
     def create_internal_locations(self):
-        self.parser.create_delayed_rules()
+        self.parser.create_delayed_rules(self)
         ev_items = self.settings.event_items
         parser_events = self.parser.events
         assert len(self.parser.events) <= len(self.settings.event_items), 'Parse error: undefined items %r' % (parser_events - ev_items)
@@ -296,7 +294,7 @@ class World(object):
             boss = pull_item_or_location([prize_locs], self, name)
             if boss is None:
                 try:
-                    location = LocationFactory(name)
+                    location = LocationFactory(name, self)
                 except KeyError:
                     raise RuntimeError('Unknown boss in world %d: %s' % (self.id + 1, name))
                 if location.type == 'Boss':
@@ -319,7 +317,7 @@ class World(object):
 
 
     def fill_bosses(self, bossCount=9):
-        boss_rewards = ItemFactory(self.rewardlist, self)
+        boss_rewards = ItemFactory(self.rewardlist, self.id)
         boss_locations = [self.get_location(loc) for loc in self.boss_location_names]
 
         placed_prizes = [loc.item.name for loc in boss_locations if loc.item is not None]
@@ -427,7 +425,7 @@ class World(object):
             item.price = location.price if location.price is not None else item.price
             location.price = item.price
 
-            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world_id if hasattr(item, 'world_id') else -1, location, location.world.id if hasattr(location, 'world') else -1)
+            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world_id if hasattr(item, 'world_id') else -1, location, location.world_id if hasattr(location, 'world_id') else -1)
         else:
             raise RuntimeError('Cannot assign item %s to location %s.' % (item, location))
 
@@ -564,7 +562,7 @@ class World(object):
                 world_id = location.item.world_id
                 item = location.item
 
-                if (not location.item.majoritem) or (location.item.name in exclude_item_list):
+                if (not location.item.is_majoritem(self.settings)) or (location.item.name in exclude_item_list):
                     # Minor items are always useless in logic
                     continue
 
@@ -573,7 +571,7 @@ class World(object):
                     # If this is the required Letter then it is not useless
                     dupe_locations = duplicate_item_woth[world_id][item.name]
                     for dupe_location in dupe_locations:
-                        if dupe_location.world.id == location.world.id and dupe_location.name == location.name:
+                        if dupe_location.name == location.name:
                             useless_area = False
                             break
                     # Otherwise it is treated as a bottle
@@ -599,7 +597,7 @@ class World(object):
 
                 # If this is a required item location, then it is not useless
                 for dupe_location in dupe_locations:
-                    if dupe_location.world.id == location.world.id and dupe_location.name == location.name:
+                    if dupe_location.name == location.name:
                         useless_area = False
                         break
 
