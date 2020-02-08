@@ -83,11 +83,7 @@ gossipLocations = {
 }
 
 
-def getItemGenericName(item: Item):
-    if item.dungeonitem:
-        return item.type
-    else:
-        return item.name
+
 
 
 def isRestrictedDungeonItem(dungeon, item):
@@ -327,7 +323,7 @@ def get_good_item_hint(spoiler, world, checked):
     location = random.choice(locations)
     checked.add(location.name)
 
-    item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+    item_text = getHint(location.item.genericName, world.clearer_hints).text
     if location.parent_region.dungeon:
         location_text = getHint(location.parent_region.dungeon.name, world.clearer_hints).text
         return (GossipText('#%s# hoards #%s#.' % (location_text, item_text), ['Green', 'Red']), location)
@@ -350,7 +346,7 @@ def get_random_location_hint(spoiler, world, checked):
     checked.add(location.name)
     dungeon = location.parent_region.dungeon
 
-    item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+    item_text = getHint(location.item.genericName, world.clearer_hints).text
     if dungeon:
         location_text = getHint(dungeon.name, world.clearer_hints).text
         return (GossipText('#%s# hoards #%s#.' % (location_text, item_text), ['Green', 'Red']), location)
@@ -372,7 +368,7 @@ def get_specific_hint(spoiler, world, checked, type):
     location_text = hint.text
     if '#' not in location_text:
         location_text = '#%s#' % location_text
-    item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+    item_text = getHint(location.item.genericName, world.clearer_hints).text
 
     return (GossipText('%s #%s#.' % (location_text, item_text), ['Green', 'Red']), location)
 
@@ -587,7 +583,7 @@ def buildWorldGossipHints(spoiler, world, checkedLocations=None):
         location_text = getHint(location.name, world.clearer_hints).text
         if '#' not in location_text:
             location_text = '#%s#' % location_text
-        item_text = getHint(getItemGenericName(location.item), world.clearer_hints).text
+        item_text = getHint(location.item.genericName, world.clearer_hints).text
         add_hint(spoiler, world, stoneIDs, GossipText('%s #%s#.' % (location_text, item_text), ['Green', 'Red']), hint_dist['always'][1], location, force_reachable=True)
 
     # Add trial hints

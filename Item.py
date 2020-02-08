@@ -86,6 +86,12 @@ class Item(object):
     def key(self):
         return self.smallkey or self.bosskey
 
+    @property
+    def genericName(self):
+        if self.dungeonitem:
+            return self.type
+        else:
+            return self.name
 
     @property
     def smallkey(self):
@@ -164,7 +170,7 @@ def MakeEventItem(name, location):
     location.locked = True
     if name not in item_table:
         location.internal = True
-    location.world.event_items.add(name)
+    location.world.settings.event_items.add(name)
     return item
 
 

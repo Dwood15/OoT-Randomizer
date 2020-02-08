@@ -158,9 +158,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     rom.write_bytes(0x1FC0CF8, Block_code)
 
     # songs as items flag
-    songs_as_items = world.shuffle_song_items or \
-                     world.start_with_fast_travel or \
-                     world.distribution.song_as_items
+    songs_as_items = world.songs_as_items
 
     # Speed learning Zelda's Lullaby
     rom.write_int32s(0x02E8E90C, [0x000003E8, 0x00000001]) # Terminator Execution
@@ -1004,19 +1002,19 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     rom.write_int16(0x00E1F3CA, 0x5036)
     rom.write_int16(0x00E1F3CC, 0x5036)
 
-    if world.no_first_dampe_race:
+    if world.settings.no_first_dampe_race:
         save_context.write_bits(0x00D4 + 0x48 * 0x1C + 0x08 + 0x3, 0x10) # Beat First Dampe Race (& Chest Spawned)
 
     # Make the Kakariko Gate not open with the MS
     rom.write_int32(0xDD3538, 0x34190000) # li t9, 0
 
-    if world.zora_fountain == 'open':
+    if world.settings.zora_fountain == 'open':
         save_context.write_bits(0x0EDB, 0x08) # "Moved King Zora"
-    elif world.zora_fountain == 'adult':
+    elif world.settings.zora_fountain == 'adult':
         rom.write_byte(rom.sym('MOVED_ADULT_KING_ZORA'), 1)
 
     # Make all chest opening animations fast
-    rom.write_byte(rom.sym('FAST_CHESTS'), int(world.fast_chests))
+    rom.write_byte(rom.sym('FAST_CHESTS'), int(world.settings.fast_chests))
 
 
     # Set up Rainbow Bridge conditions
@@ -1034,7 +1032,7 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         rom.write_int32(symbol, 4)
     elif world.bridge == 'tokens':
         rom.write_int32(symbol, 5)
-        rom.write_int16(rom.sym('RAINBOW_BRIDGE_TOKENS'), world.bridge_tokens)
+        rom.write_int16(rom.sym('RAINBOW_BRIDGE_TOKENS'), world.settings.bridge_tokens)
 
     if world.triforce_hunt:
         rom.write_int16(rom.sym('triforce_pieces_requied'), world.triforce_goal)
@@ -1042,11 +1040,11 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
 
     # Set up LACS conditions.
     symbol = rom.sym('LACS_CONDITION')
-    if world.lacs_condition == 'medallions':
+    if world.settings.lacs_condition == 'medallions':
         rom.write_int32(symbol, 1)
-    elif world.lacs_condition == 'dungeons':
+    elif world.settings.lacs_condition == 'dungeons':
         rom.write_int32(symbol, 2)
-    elif world.lacs_condition == 'stones':
+    elif world.settings.lacs_condition == 'stones':
         rom.write_int32(symbol, 3)
     else:
         rom.write_int32(symbol, 0)
@@ -1054,12 +1052,12 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
     if world.open_forest == 'open':
         save_context.write_bits(0xED5, 0x10) # "Showed Mido Sword & Shield"
 
-    if world.open_door_of_time:
+    if world.settings.open_door_of_time:
         save_context.write_bits(0xEDC, 0x08) # "Opened the Door of Time"
 
     # "fast-ganon" stuff
     symbol = rom.sym('NO_ESCAPE_SEQUENCE')
-    if world.no_escape_sequence:
+    if world.settings.no_escape_sequence:
         rom.write_bytes(0xD82A12, [0x05, 0x17]) # Sets exit from Ganondorf fight to entrance to Ganon fight
         rom.write_bytes(0xB139A2, [0x05, 0x17]) # Sets Ganon deathwarp back to Ganon
         rom.write_byte(symbol, 0x01)
@@ -1081,15 +1079,15 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
         save_context.write_bits(0x0EED, 0x08) # "Dispelled Ganon's Tower Barrier"
 
     # open gerudo fortress
-    if world.gerudo_fortress == 'open':
-        if not world.shuffle_gerudo_card:
+    if world.settings.gerudo_fortress == 'open':
+        if not world.settings.shuffle_gerudo_card:
             save_context.write_bits(0x00A5, 0x40) # Give Gerudo Card
         save_context.write_bits(0x0EE7, 0x0F) # Free all 4 carpenters
         save_context.write_bits(0x00D4 + 0x0C * 0x1C + 0x04 + 0x1, 0x0F) # Thieves' Hideout switch flags (started all fights)
         save_context.write_bits(0x00D4 + 0x0C * 0x1C + 0x04 + 0x2, 0x01) # Thieves' Hideout switch flags (heard yells/unlocked doors)
         save_context.write_bits(0x00D4 + 0x0C * 0x1C + 0x04 + 0x3, 0xFE) # Thieves' Hideout switch flags (heard yells/unlocked doors)
         save_context.write_bits(0x00D4 + 0x0C * 0x1C + 0x0C + 0x2, 0xD4) # Thieves' Hideout collection flags (picked up keys, marks fights finished as well)
-    elif world.gerudo_fortress == 'fast':
+    elif world.settings.gerudo_fortress == 'fast':
         save_context.write_bits(0x0EE7, 0x0E) # Free 3 carpenters
         save_context.write_bits(0x00D4 + 0x0C * 0x1C + 0x04 + 0x1, 0x0D) # Thieves' Hideout switch flags (started all fights)
         save_context.write_bits(0x00D4 + 0x0C * 0x1C + 0x04 + 0x2, 0x01) # Thieves' Hideout switch flags (heard yells/unlocked doors)
@@ -1098,23 +1096,23 @@ def patch_rom(spoiler:Spoiler, world:World, rom:Rom):
 
     # Add a gate-opening guard on the Wasteland side of the Gerudo gate when the card is shuffled or certain levels of ER.
     # Overrides the generic guard at the bottom of the ladder in Gerudo Fortress
-    if world.shuffle_gerudo_card or world.shuffle_overworld_entrances or world.shuffle_special_indoor_entrances:
+    if world.settings.shuffle_gerudo_card or world.settings.shuffle_overworld_entrances or world.settings.shuffle_special_indoor_entrances:
         # Add a gate opening guard on the Wasteland side of the Gerudo Fortress' gate
         new_gate_opening_guard = [0x0138, 0xFAC8, 0x005D, 0xF448, 0x0000, 0x95B0, 0x0000, 0x0301]
         rom.write_int16s(0x21BD3EC, new_gate_opening_guard)  # Adult Day
         rom.write_int16s(0x21BD62C, new_gate_opening_guard)  # Adult Night
 
     # start with maps/compasses
-    if world.shuffle_mapcompass == 'startwith':
+    if world.settings.shuffle_mapcompass == 'startwith':
         for dungeon in ['deku', 'dodongo', 'jabu', 'forest', 'fire', 'water', 'spirit', 'shadow', 'botw', 'ice']:
             save_context.addresses['dungeon_items'][dungeon]['compass'].value = True
             save_context.addresses['dungeon_items'][dungeon]['map'].value = True
 
-    if world.shuffle_smallkeys == 'vanilla':
+    if world.settings.shuffle_smallkeys == 'vanilla':
         if world.dungeon_mq['Spirit Temple']:
             save_context.addresses['keys']['spirit'].value = 3
 
-    if world.start_with_rupees:
+    if world.settings.start_with_rupees:
         rom.write_byte(rom.sym('MAX_RUPEES'), 0x01)
 
     # Set starting time of day

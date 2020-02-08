@@ -55,7 +55,7 @@ def aborting_run(self, result=None):
 
 original_run = unittest.TestCase.run
 unittest.TestCase.run = aborting_run
-
+unittest.TestProgram.failfast = True
 
 def load_settings(settings_file, seed=None):
     sfile = os.path.join(test_dir, settings_file)

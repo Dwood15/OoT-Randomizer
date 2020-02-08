@@ -271,46 +271,17 @@ class WorldDistribution(object):
                 raise KeyError('Cannot add location that already exists')
         self.locations[new_location] = LocationRecord(new_item)
 
-
-    def configure_dungeons(self, world, dungeon_pool):
-        dist_num_mq = 0
-        for (name, record) in self.dungeons.items():
-            if record.mq is not None:
-                dungeon_pool.remove(name)
-                if record.mq:
-                    dist_num_mq += 1
-                    world.dungeon_mq[name] = True
-        return dist_num_mq
-
-
-    def configure_trials(self, trial_pool):
-        dist_chosen = []
-        for (name, record) in self.trials.items():
-            if record.active is not None:
-                trial_pool.remove(name)
-                if record.active:
-                    dist_chosen.append(name)
-        return dist_chosen
-
-
-    def configure_randomized_settings(self, world):
-        for name, record in self.randomized_settings.items():
-            setattr(world, name, record)
-            if name not in world.randomized_list:
-                world.randomized_list.append(name)
-
-
     def configure_stating_items_settings(self, world):
-        if world.start_with_wallet:
+        if world.settings.start_with_wallet:
             self.give_item('Progressive Wallet', 3)
-        if world.start_with_rupees:
+        if world.settings.start_with_rupees:
             self.give_item('Rupees', 999)
-        if world.start_with_deku_equipment:
+        if world.settings.start_with_deku_equipment:
             if world.shopsanity == "off":
                 self.give_item('Deku Shield')
             self.give_item('Deku Sticks', 99)
             self.give_item('Deku Nuts', 99)
-        if world.start_with_fast_travel:
+        if world.settings.start_with_fast_travel:
             self.give_item('Prelude of Light')
             self.give_item('Serenade of Water')
             self.give_item('Farores Wind')
@@ -583,14 +554,14 @@ class WorldDistribution(object):
             if record.item in item_groups['DungeonReward']:
                 raise RuntimeError('Cannot place dungeon reward %s in world %d in location %s.' % (record.item, self.id + 1, location_name))
 
-            if record.item == '#Junk' and location.type == 'Song' and not world.shuffle_song_items:
+            if record.item == '#Junk' and location.type == 'Song' and not world.settings.shuffle_song_items:
                 record.item = '#JunkSong'
 
             ignore_pools = None
             is_invert = pattern_matcher(record.item)('!')
-            if is_invert and location.type != 'Song' and not world.shuffle_song_items:
+            if is_invert and location.type != 'Song' and not world.settings.shuffle_song_items:
                 ignore_pools = [2]
-            if is_invert and location.type == 'Song' and not world.shuffle_song_items:
+            if is_invert and location.type == 'Song' and not world.settings.shuffle_song_items:
                 ignore_pools = [i for i in range(len(item_pools)) if i != 2]
 
             try:
@@ -698,7 +669,7 @@ class WorldDistribution(object):
 
 class Distribution(object):
     def __init__(self, settings, src_dict={}):
-        self.settings = settings
+        self._settings_copy = settings
         self.world_dists = [WorldDistribution(self, id) for id in range(settings.world_count)]
         self.update(src_dict, update_all=True)
 
@@ -751,7 +722,7 @@ class Distribution(object):
             '_settings': src_dict.get('settings', {}),
         }
 
-        self.settings.__dict__.update(update_dict['_settings'])
+        self._settings_copy.__dict__.update(update_dict['_settings'])
         if 'settings' in src_dict:
             src_dict['_settings'] = src_dict['settings']
             del src_dict['settings']
@@ -781,14 +752,14 @@ class Distribution(object):
         self_dict = {
             ':version': __version__,
             'file_hash': CollapseList(self.file_hash),
-            ':seed': self.settings.seed,
-            ':settings_string': self.settings.settings_string,
-            'settings': self.settings.to_json(),
+            ':seed': self._settings_copy.seed,
+            ':settings_string': self._settings_copy.settings_string,
+            'settings': self._settings_copy.to_json(),
         }
 
         if spoiler:
             world_dist_dicts = [world_dist.to_json() for world_dist in self.world_dists]
-            if self.settings.world_count > 1:
+            if self._settings_copy.world_count > 1:
                 for k in per_world_keys:
                     self_dict[k] = {}
                     for id, world_dist_dict in enumerate(world_dist_dicts):
@@ -836,7 +807,6 @@ class Distribution(object):
 
         for world in spoiler.worlds:
             world_dist = self.world_dists[world.id]
-            world_dist.randomized_settings = {randomized_item: getattr(world, randomized_item) for randomized_item in world.randomized_list}
             world_dist.dungeons = {dung: DungeonRecord({ 'mq': world.dungeon_mq[dung] }) for dung in world.dungeon_mq}
             world_dist.trials = {trial: TrialRecord({ 'active': not world.skipped_trials[trial] }) for trial in world.skipped_trials}
             world_dist.entrances = {ent.name: EntranceRecord.from_entrance(ent) for ent in spoiler.entrances[world.id]}

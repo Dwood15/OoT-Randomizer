@@ -15,11 +15,11 @@ def set_rules(world):
     is_child = world.parser.parse_rule('is_child')
 
     for location in world.get_locations():
-        if not world.shuffle_song_items:
+        if not world.settings.shuffle_song_items:
             if location.type == 'Song':
                 # allow junk items, but songs must still have matching world
-                add_item_rule(location, lambda location, item: 
-                    ((location.world.distribution.song_as_items or world.start_with_fast_travel) 
+                add_item_rule(location, lambda location, item:
+                    ((location.world.distribution.song_as_items or world.start_with_fast_travel)
                         and item.type != 'Song')
                     or (item.type == 'Song' and item.world.id == location.world.id))
             else:
@@ -138,9 +138,10 @@ def set_entrances_based_rules(worlds):
 
     for world in worlds:
         for location in world.get_locations():
+
             if location.type == 'Shop':
                 # If All Locations Reachable is on, prevent shops only ever reachable as child from containing Buy Goron Tunic and Buy Zora Tunic items
-                if not world.check_beatable_only:
+                if not world.settings.check_beatable_only:
                     if not search.can_reach(location.parent_region, age='adult'):
                         forbid_item(location, 'Buy Goron Tunic')
                         forbid_item(location, 'Buy Zora Tunic')

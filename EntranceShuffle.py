@@ -324,10 +324,10 @@ def shuffle_random_entrances(worlds):
         # Determine entrance pools based on settings, to be shuffled in the order we set them by
         entrance_pools = OrderedDict()
 
-        if worlds[0].shuffle_special_indoor_entrances:
+        if worlds[0].settings.shuffle_special_indoor_entrances:
             entrance_pools['SpecialInterior'] = entrance_instances(world, get_entrance_pool('SpecialInterior'))
 
-        if worlds[0].shuffle_overworld_entrances:
+        if worlds[0].settings.shuffle_overworld_entrances:
             entrance_pools['Overworld'] = entrance_instances(world, get_entrance_pool('Overworld'))
             # Overworld entrances should be shuffled from both directions, unlike other types of entrances
             for entrance in entrance_pools['Overworld'].copy():
@@ -335,22 +335,22 @@ def shuffle_random_entrances(worlds):
                 entrance_pools['Overworld'].append(entrance.reverse)
             entrance_pools['OwlDrop'] = entrance_instances(world, get_entrance_pool('OwlDrop'))
 
-        if worlds[0].shuffle_dungeon_entrances:
+        if worlds[0].settings.shuffle_dungeon_entrances:
             entrance_pools['Dungeon'] = entrance_instances(world, get_entrance_pool('Dungeon'))
             # The fill algorithm will already make sure gohma is reachable, however it can end up putting
             # a forest escape via the hands of spirit on Deku leading to Deku on spirit in logic. This is
             # not really a closed forest anymore, so specifically remove Deku Tree from closed forest.
-            if worlds[0].open_forest == 'closed':
+            if worlds[0].settings.open_forest == 'closed':
                 entrance_pools['Dungeon'].remove(world.get_entrance('Outside Deku Tree -> Deku Tree Lobby'))
                 world.get_entrance('Outside Deku Tree -> Deku Tree Lobby').shuffled = False
                 world.get_entrance('Deku Tree Lobby -> Outside Deku Tree').shuffled = False
 
-        if worlds[0].shuffle_interior_entrances:
+        if worlds[0].settings.shuffle_interior_entrances:
             entrance_pools['Interior'] = entrance_instances(world, get_entrance_pool('Interior')) + entrance_pools.get('SpecialInterior', [])
 
-        if worlds[0].shuffle_grotto_entrances:
+        if worlds[0].settings.shuffle_grotto_entrances:
             entrance_pools['GrottoGrave'] = entrance_instances(world, get_entrance_pool('Grotto') + get_entrance_pool('Grave'))
-            if worlds[0].shuffle_special_indoor_entrances:
+            if worlds[0].settings.shuffle_special_indoor_entrances:
                 entrance_pools['GrottoGrave'] += entrance_instances(world, get_entrance_pool('SpecialGrave'))
 
         # Set the assumption that all entrances are reachable
@@ -534,15 +534,15 @@ def validate_worlds(worlds, entrance_placed, locations_to_ensure_reachable, item
 
     if locations_to_ensure_reachable:
         max_search = Search.max_explore([world.state for world in worlds], itempool)
-        # If ALR is enabled, ensure all locations we want to keep reachable are indeed still reachable 
+        # If ALR is enabled, ensure all locations we want to keep reachable are indeed still reachable
         # Otherwise, just continue if the game is still beatable
-        if not (worlds[0].check_beatable_only and max_search.can_beat_game(False)):
+        if not (worlds[0].settings.check_beatable_only and max_search.can_beat_game(False)):
             max_search.visit_locations(locations_to_ensure_reachable)
             for location in locations_to_ensure_reachable:
                 if not max_search.visited(location):
                     raise EntranceShuffleError('%s is unreachable' % location.name)
 
-    if (entrance_placed == None and worlds[0].shuffle_special_indoor_entrances) or \
+    if (entrance_placed == None and worlds[0].settings.shuffle_special_indoor_entrances) or \
        (entrance_placed != None and entrance_placed.type in ['SpecialInterior', 'Overworld']):
         if max_search == None:
             max_search = Search.max_explore([world.state for world in worlds], itempool)

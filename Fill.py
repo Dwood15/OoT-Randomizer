@@ -353,7 +353,7 @@ def fill_restrictive(window, worlds, base_search, locations, itempool, count=-1)
 
         # perform_access_check checks location reachability
         perform_access_check = True
-        if worlds[0].check_beatable_only:
+        if worlds[0].settings.check_beatable_only:
             # if any world can not longer be beatable with the remaining items
             # then we must check for reachability no matter what.
             # This way the reachability test is monotonic. If we were to later
@@ -450,7 +450,7 @@ def fill_restrictive_fast(window, worlds, locations, itempool):
         # we don't need to check beatability since world must be beatable
         # at this point
         if spot_to_fill is None:
-            if not worlds[0].check_beatable_only:
+            if not worlds[0].settings.check_beatable_only:
                 logger.debug('Not all items placed. Game beatable anyway.')
             break
 

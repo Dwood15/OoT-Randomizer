@@ -44,7 +44,6 @@ class dummy_window():
 
 
 def main(settings, window=dummy_window()):
-
     start = time.process_time()
 
     logger = logging.getLogger('')
@@ -86,7 +85,7 @@ def main(settings, window=dummy_window()):
     settings.remove_disabled()
     logger.info('(Original) Settings string: %s\n', settings.settings_string)
     random.seed(settings.numeric_seed)
-    settings.resolve_random_settings(cosmetic=False)
+
     logger.debug(settings.get_settings_display())
     max_attempts = 1
     for attempt in range(1, max_attempts + 1):
@@ -497,22 +496,16 @@ def run_process(window, logger, args):
             break
 
 
-def copy_worlds(worlds):
-    worlds = [world.copy() for world in worlds]
-    Item.fix_worlds_after_copy(worlds)
-    return worlds
-
-
 def create_playthrough(spoiler):
     worlds = spoiler.worlds
-    if worlds[0].check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+    if worlds[0].settings.check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
         raise RuntimeError('Uncopied is broken too.')
     # create a copy as we will modify it
-    old_worlds = worlds
-    worlds = copy_worlds(worlds)
+    worlds = [world.copy() for world in worlds]
+    Item.fix_worlds_after_copy(worlds)
 
     # if we only check for beatable, we can do this sanity check first before writing down spheres
-    if worlds[0].check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
+    if worlds[0].settings.check_beatable_only and not State.can_beat_game([world.state for world in worlds]):
         raise RuntimeError('Cannot beat game. Something went terribly wrong here!')
 
     search = RewindableSearch([world.state for world in worlds])
