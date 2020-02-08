@@ -163,7 +163,7 @@ class State(object):
                 if not search.can_beat_game():
                     required_locations.append(location)
                 location.item = old_item
-            search.state_list[location.item.world.id].collect(location.item)
+            search.state_list[location.item.world_id].collect(location.item)
 
         # Filter the required location to only include location in the world
         required_locations_dict = {}

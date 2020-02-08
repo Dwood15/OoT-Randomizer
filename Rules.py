@@ -21,7 +21,7 @@ def set_rules(world):
                 add_item_rule(location, lambda location, item:
                     ((location.world.distribution.song_as_items or world.start_with_fast_travel)
                         and item.type != 'Song')
-                    or (item.type == 'Song' and item.world.id == location.world.id))
+                    or (item.type == 'Song' and item.world_id == location.world.id))
             else:
                 add_item_rule(location, lambda location, item: item.type != 'Song')
 
@@ -31,7 +31,7 @@ def set_rules(world):
                 location.price = world.shop_prices[location.name]
                 location.add_rule(create_shop_rule(location))
             else:
-                add_item_rule(location, lambda location, item: item.type == 'Shop' and item.world.id == location.world.id)
+                add_item_rule(location, lambda location, item: item.type == 'Shop' and item.world_id == location.world.id)
         elif 'Deku Scrub' in location.name:
             location.add_rule(create_shop_rule(location))
         else:

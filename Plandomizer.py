@@ -132,10 +132,7 @@ class LocationRecord(SimpleRecord({'item': None, 'player': None, 'price': None, 
 
     @staticmethod
     def from_item(item):
-        if item.world.settings.world_count > 1:
-            player = item.world.id + 1
-        else:
-            player = None if item.location is not None and item.world is item.location.world else (item.world.id + 1)
+        player = 1
 
         return LocationRecord({
             'item': item.name,
@@ -295,7 +292,7 @@ class WorldDistribution(object):
         if world_id is None:
             predicate = remove_matcher
         else:
-            predicate = lambda item: item.world.id == world_id and remove_matcher(item.name)
+            predicate = lambda item: item.world_id == world_id and remove_matcher(item.name)
 
         for i in range(count):
             removed_item = pull_random_element(pools, predicate, ignore_pools=ignore_pools)
@@ -394,14 +391,14 @@ class WorldDistribution(object):
             else:
                 self.item_pool[item.name] = ItemPoolRecord()
 
-    def collect_starters(self, state):
+    def collect_starters(self, world):
         for (name, record) in self.starting_items.items():
             for _ in range(record.count):
                 try:
-                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name)
+                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name, world)
                 except KeyError:
                     continue
-                state.collect(item)
+                world.state.collect(item)
 
     def pool_replace_item(self, item_pools, item_group, player_id, new_item, worlds):
         removed_item = self.pool_remove_item(item_pools, item_group, 1, world_id=player_id)[0]

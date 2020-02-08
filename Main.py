@@ -535,7 +535,7 @@ def create_playthrough(spoiler):
         remaining_entrances -= accessed_entrances
         for location in collected:
             # Collect the item for the state world it is for
-            search.state_list[location.item.world.id].collect(location.item)
+            search.state_list[location.item.world_id].collect(location.item)
     logger.info('Collected %d spheres', len(collection_spheres))
 
     # Reduce each sphere in reverse order, by checking if the game is beatable
@@ -548,7 +548,7 @@ def create_playthrough(spoiler):
             old_item = location.item
 
             # Uncollect the item and location.
-            search.state_list[old_item.world.id].remove(old_item)
+            search.state_list[old_item.world_id].remove(old_item)
             search.unvisit(location)
 
             # Generic events might show up or not, as usual, but since we don't
@@ -561,7 +561,7 @@ def create_playthrough(spoiler):
             location.item = None
 
             # An item can only be required if it isn't already obtained or if it's progressive
-            if search.state_list[old_item.world.id].item_count(old_item.name) < old_item.special.get('progressive', 1):
+            if search.state_list[old_item.world_id].item_count(old_item.name) < old_item.special.get('progressive', 1):
                 # Test whether the game is still beatable from here.
                 logger.debug('Checking if %s is required to beat the game.', old_item.name)
                 if not search.can_beat_game():
@@ -601,7 +601,7 @@ def create_playthrough(spoiler):
         if internal:
             # collect only the internal events but don't record them in a sphere
             for location in internal:
-                search.state_list[location.item.world.id].collect(location.item)
+                search.state_list[location.item.world_id].collect(location.item)
             # Remaining locations need to be saved to be collected later
             collected -= internal
             continue
@@ -612,7 +612,7 @@ def create_playthrough(spoiler):
         remaining_entrances -= accessed_entrances
         for location in collected:
             # Collect the item for the state world it is for
-            search.state_list[location.item.world.id].collect(location.item)
+            search.state_list[location.item.world_id].collect(location.item)
         collected.clear()
     logger.info('Collected %d final spheres', len(collection_spheres))
 

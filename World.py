@@ -228,13 +228,16 @@ class World(object):
 
     def initialize_items(self):
         for item in self.itempool:
-            item.world = self
+            if item.world_id != self.id:
+                raise Exception("WHERE DID WE GO WRONG?!?")
         for region in self.regions:
             for location in region.locations:
-                if location.item != None:
-                    location.item.world = self
+                if location.item != None and item.world_id != self.id:
+                    # location.item.world = self
+                    raise Exception("WHERE DID WE GO WRONG?!?")
         for item in [item for dungeon in self.dungeons for item in dungeon.all_items]:
-            item.world = self
+            if item.world_id == -1:
+                item.__world = self
 
     def random_shop_prices(self):
         shop_item_indexes = ['7', '5', '8', '6']
@@ -406,7 +409,8 @@ class World(object):
             itempool.extend([item for dungeon in self.dungeons if dungeon.name == 'Ganons Castle' for item in dungeon.boss_key])
 
         for item in itempool:
-            item.world = self
+            if item.world_id == -1:
+                item.__world = self
         return itempool
 
 
@@ -423,7 +427,8 @@ class World(object):
             itempool.extend([item for dungeon in self.dungeons if dungeon.name == 'Ganons Castle' for item in dungeon.boss_key])
 
         for item in itempool:
-            item.world = self
+            if item.world_id == -1:
+                item.__world = self
         return itempool
 
 
@@ -441,7 +446,7 @@ class World(object):
             item.price = location.price if location.price is not None else item.price
             location.price = item.price
 
-            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world.id if hasattr(item, 'world') else -1, location, location.world.id if hasattr(location, 'world') else -1)
+            logging.getLogger('').debug('Placed %s [World %d] at %s [World %d]', item, item.world_id if hasattr(item, 'world_id') else -1, location, location.world.id if hasattr(location, 'world') else -1)
         else:
             raise RuntimeError('Cannot assign item %s to location %s.' % (item, location))
 
@@ -549,7 +554,7 @@ class World(object):
         for world in spoiler.worlds:
             duplicate_item_woth[world.id] = {}
         for location in woth_loc:
-            world_id = location.item.world.id
+            world_id = location.item.world_id
             item = location.item
 
             if item.name == 'Bottle with Letter' and item.name in duplicate_item_woth[world_id]:
@@ -575,7 +580,7 @@ class World(object):
         for area,area_info in areas.items():
             useless_area = True
             for location in area_info['locations']:
-                world_id = location.item.world.id
+                world_id = location.item.world_id
                 item = location.item
 
                 if (not location.item.majoritem) or (location.item.name in exclude_item_list):

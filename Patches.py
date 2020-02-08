@@ -1744,7 +1744,7 @@ def get_override_entry(location):
     if None in [scene, default, item_id]:
         return None
 
-    player_id = location.item.world.id + 1
+    player_id = location.item.world_id + 1
     if location.item.looks_like_item is not None:
         looks_like_item_id = location.item.looks_like_item.index
     else:
@@ -2039,7 +2039,7 @@ def place_shop_items(rom, world, shop_items, messages, locations, init_shop_id=F
                     split_item_name[0] = create_fake_name(split_item_name[0])
 
                 if world.world_count > 1:
-                    description_text = '\x08\x05\x41%s  %d Rupees\x01%s\x01\x05\x42Player %d\x05\x40\x01Special deal! ONE LEFT!\x09\x0A\x02' % (split_item_name[0], location.price, split_item_name[1], location.item.world.id + 1)
+                    description_text = '\x08\x05\x41%s  %d Rupees\x01%s\x01\x05\x42Player %d\x05\x40\x01Special deal! ONE LEFT!\x09\x0A\x02' % (split_item_name[0], location.price, split_item_name[1], location.item.world_id + 1)
                 else:
                     description_text = '\x08\x05\x41%s  %d Rupees\x01%s\x01\x05\x40Special deal! ONE LEFT!\x01Get it while it lasts!\x09\x0A\x02' % (split_item_name[0], location.price, split_item_name[1])
                 purchase_text = '\x08%s  %d Rupees\x09\x01%s\x01\x1B\x05\x42Buy\x01Don\'t buy\x05\x40\x02' % (split_item_name[0], location.price, split_item_name[1])
@@ -2049,7 +2049,7 @@ def place_shop_items(rom, world, shop_items, messages, locations, init_shop_id=F
                     shop_item_name = create_fake_name(shop_item_name)
 
                 if world.world_count > 1:
-                    description_text = '\x08\x05\x41%s  %d Rupees\x01\x05\x42Player %d\x05\x40\x01Special deal! ONE LEFT!\x09\x0A\x02' % (shop_item_name, location.price, location.item.world.id + 1)
+                    description_text = '\x08\x05\x41%s  %d Rupees\x01\x05\x42Player %d\x05\x40\x01Special deal! ONE LEFT!\x09\x0A\x02' % (shop_item_name, location.price, location.item.world_id + 1)
                 else:
                     description_text = '\x08\x05\x41%s  %d Rupees\x01\x05\x40Special deal! ONE LEFT!\x01Get it while it lasts!\x09\x0A\x02' % (shop_item_name, location.price)
                 purchase_text = '\x08%s  %d Rupees\x09\x01\x01\x1B\x05\x42Buy\x01Don\'t buy\x05\x40\x02' % (shop_item_name, location.price)

@@ -727,6 +727,9 @@ def replace_max_item(items, item, max):
 
 
 def generate_itempool(world):
+    if world is None:
+        raise Exception("world is none but it shouldn't be! what is wrong with you?!?")
+
     junk_pool[:] = list(junk_pool_base)
     if world.junk_ice_traps == 'on': 
         junk_pool.append(('Ice Trap', 10))
@@ -1183,9 +1186,9 @@ def get_pool_core(world):
         # We can resolve this by starting with some extra keys
         if world.dungeon_mq['Spirit Temple']:
             # Yes somehow you need 3 keys. This dungeon is bonkers
-            world.state.collect(ItemFactory('Small Key (Spirit Temple)'))
-            world.state.collect(ItemFactory('Small Key (Spirit Temple)'))
-            world.state.collect(ItemFactory('Small Key (Spirit Temple)'))
+            world.state.collect(ItemFactory('Small Key (Spirit Temple)', world))
+            world.state.collect(ItemFactory('Small Key (Spirit Temple)', world))
+            world.state.collect(ItemFactory('Small Key (Spirit Temple)', world))
         #if not world.dungeon_mq['Fire Temple']:
         #    world.state.collect(ItemFactory('Small Key (Fire Temple)'))
     if world.shuffle_bosskeys == 'vanilla':
@@ -1198,9 +1201,9 @@ def get_pool_core(world):
 
 
     if not world.keysanity and not world.dungeon_mq['Fire Temple']:
-        world.state.collect(ItemFactory('Small Key (Fire Temple)'))
+        world.state.collect(ItemFactory('Small Key (Fire Temple)', world))
     if not world.dungeon_mq['Water Temple']:
-        world.state.collect(ItemFactory('Small Key (Water Temple)'))
+        world.state.collect(ItemFactory('Small Key (Water Temple)', world))
 
     if world.triforce_hunt:
         trifroce_count = int(world.triforce_goal_per_world * TriforceCounts[world.item_pool_value])
@@ -1246,6 +1249,6 @@ def get_pool_core(world):
     world.distribution.alter_pool(world, pool)
 
     world.distribution.configure_stating_items_settings(world)
-    world.distribution.collect_starters(world.state)
+    world.distribution.collect_starters(world)
 
     return (pool, placed_items)

@@ -38,6 +38,9 @@ for item_name in item_table:
 class Item(object):
 
     def __init__(self, name='', world=None, event=False):
+        if world is None:
+            raise Exception("sussing out initialization to empty world ")
+
         self.name = name
         self.location = None
         self.event = event
@@ -48,7 +51,7 @@ class Item(object):
         else:
             self.info = ItemInfo.items[name]
         self.price = self.info.special.get('price')
-        self.world = world
+        self.__world = world
         self.looks_like_item = None
         self.advancement = self.info.advancement
         self.priority = self.info.priority
@@ -60,27 +63,36 @@ class Item(object):
     item_worlds_to_fix = {}
 
     def copy(self, new_world=None):
-        if new_world is not None and self.world is not None and new_world.id != self.world.id:
-            new_world = None
+        if new_world is not None and self.__world is not None and new_world.id != self.__world.id:
+            raise Exception("Making a copy with a new world that does not match the original world")
 
         new_item = Item(self.name, new_world, self.event)
         new_item.price = self.price
 
-        if new_world is None and self.world is not None:
-            Item.item_worlds_to_fix[new_item] = self.world.id
+        if new_world is None and self.__world is not None:
+            Item.item_worlds_to_fix[new_item] = self.__world.id
 
         return new_item
 
+    @property
+    def world(self):
+        raise Exception("Trying to suss out more fucking circular references holy fucking shit")
 
     @classmethod
     def fix_worlds_after_copy(cls, worlds):
         items_fixed = []
         for item, world_id in cls.item_worlds_to_fix.items():
-            item.world = worlds[world_id]
+            item.__world = worlds[world_id]
             items_fixed.append(item)
         for item in items_fixed:
             del cls.item_worlds_to_fix[item]
 
+    @property
+    def world_id(self):
+        if self.__world is None:
+            return -1
+
+        return self.__world.id
 
     @property
     def key(self):
@@ -121,21 +133,21 @@ class Item(object):
     @property
     def majoritem(self):
         if self.type == 'Token':
-            return self.world.bridge == 'tokens'
+            return self.__world.bridge == 'tokens'
 
         if self.type in ('Drop', 'Event', 'Shop', 'DungeonReward') or not self.advancement:
             return False
 
-        if self.name.startswith('Bombchus') and not self.world.bombchus_in_logic:
+        if self.name.startswith('Bombchus') and not self.__world.bombchus_in_logic:
             return False
 
         if self.map or self.compass:
             return False
-        if self.smallkey and self.world.shuffle_smallkeys in ['dungeon', 'vanilla']:
+        if self.smallkey and self.__world.shuffle_smallkeys in ['dungeon', 'vanilla']:
             return False
-        if self.bosskey and not self.name.endswith('(Ganons Castle)') and self.world.shuffle_bosskeys in ['dungeon', 'vanilla']:
+        if self.bosskey and not self.name.endswith('(Ganons Castle)') and self.__world.shuffle_bosskeys in ['dungeon', 'vanilla']:
             return False
-        if self.bosskey and self.name.endswith('(Ganons Castle)') and self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']:
+        if self.bosskey and self.name.endswith('(Ganons Castle)') and self.__world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']:
             return False
 
         return True
@@ -150,6 +162,9 @@ class Item(object):
 
 
 def ItemFactory(items, world=None, event=False):
+    if world is None:
+        raise Exception("world should never be none, but it is anyway. RIP")
+
     if isinstance(items, str):
         if not event and items not in ItemInfo.items:
             raise KeyError('Unknown Item: %s', items)

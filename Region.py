@@ -71,10 +71,10 @@ class Region(object):
             is_dungeon_restricted = self.world.shuffle_ganon_bosskey in ['dungeon', 'vanilla']
 
         if is_dungeon_restricted and not manual:
-            return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world.id == self.world.id
+            return self.dungeon and self.dungeon.is_dungeon_item(item) and item.world_id == self.world.id
 
         if item.name == 'Triforce Piece':
-            return item.world.id == self.world.id
+            return item.world_id == self.world.id
 
         return True
 
