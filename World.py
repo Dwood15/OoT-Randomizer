@@ -226,19 +226,6 @@ class World(object):
             for location in region.locations:
                 location.world = self
 
-    def initialize_items(self):
-        for item in self.itempool:
-            if item.world_id != self.id:
-                raise Exception("WHERE DID WE GO WRONG?!?")
-        for region in self.regions:
-            for location in region.locations:
-                if location.item != None and item.world_id != self.id:
-                    # location.item.world = self
-                    raise Exception("WHERE DID WE GO WRONG?!?")
-        for item in [item for dungeon in self.dungeons for item in dungeon.all_items]:
-            if item.world_id == -1:
-                item.__world = self
-
     def random_shop_prices(self):
         shop_item_indexes = ['7', '5', '8', '6']
         self.shop_prices = {}
@@ -408,9 +395,6 @@ class World(object):
         if self.shuffle_ganon_bosskey == 'dungeon':
             itempool.extend([item for dungeon in self.dungeons if dungeon.name == 'Ganons Castle' for item in dungeon.boss_key])
 
-        for item in itempool:
-            if item.world_id == -1:
-                item.__world = self
         return itempool
 
 
@@ -426,9 +410,6 @@ class World(object):
         if self.settings.shuffle_ganon_bosskey == 'keysanity':
             itempool.extend([item for dungeon in self.dungeons if dungeon.name == 'Ganons Castle' for item in dungeon.boss_key])
 
-        for item in itempool:
-            if item.world_id == -1:
-                item.__world = self
         return itempool
 
 

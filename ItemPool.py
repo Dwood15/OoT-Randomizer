@@ -755,7 +755,6 @@ def generate_itempool(world):
         world.push_item(location, ItemFactory(item, world))
         world.get_location(location).locked = True
 
-    world.initialize_items()
     world.distribution.set_complete_itempool(world.itempool)
 
 
@@ -1144,10 +1143,10 @@ def get_pool_core(world):
 
     pool.extend(songlist)
     if world.free_scarecrow:
-        world.state.collect(ItemFactory('Scarecrow Song'))
+        world.state.collect(ItemFactory('Scarecrow Song', world))
     
     if world.no_epona_race:
-        world.state.collect(ItemFactory('Epona', event=True))
+        world.state.collect(ItemFactory('Epona', event=True, world=world))
 
     if world.shuffle_mapcompass == 'remove' or world.shuffle_mapcompass == 'startwith':
         for item in [item for dungeon in world.dungeons for item in dungeon.dungeon_items]:

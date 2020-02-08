@@ -90,7 +90,7 @@ class Item(object):
     @property
     def world_id(self):
         if self.__world is None:
-            return -1
+            raise Exception("__world for item: [%s] is None! What happened?!?", self.name)
 
         return self.__world.id
 
@@ -194,6 +194,9 @@ def IsItem(name):
 
 
 def ItemIterator(predicate=lambda loc: True, world=None):
+    if world is None:
+        raise Exception("world should never be none, but it is anyway. RIP")
+
     for item_name in item_table:
         item = ItemFactory(item_name, world)
         if predicate(item):
