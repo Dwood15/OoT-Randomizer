@@ -11,28 +11,25 @@ from Region import Region, TimeOfDay
 
 class State(object):
 
-    def __init__(self, parent):
+    def __init__(self):
         self.prog_items = Counter()
-        self.world = parent
         self.search = None
 
-
+    @property
+    def world(self):
+        raise Exception("STATE world SHOULD NOT be referenced")
     ## Ensure that this will always have a value
     @property
     def is_glitched(self):
         return self.world.logic_rules != 'glitchless'
 
-
-    def copy(self, new_world=None):
-        if not new_world:
-            new_world = self.world
-        new_state = State(new_world)
+    def copy(self):
+        new_state = State()
         new_state.prog_items = copy.copy(self.prog_items)
         return new_state
 
 
     def item_name(self, location):
-        location = self.world.get_location(location)
         if location.item is None:
             return None
         return location.item.name

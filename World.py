@@ -27,7 +27,7 @@ class World(object):
         self.dungeons = []
         self.regions = []
         self.itempool = []
-        self.state = State(self)
+        self.state = State()
         self._cached_locations = None
         self._entrance_cache = {}
         self._region_cache = {}
@@ -166,7 +166,6 @@ class World(object):
 
         for region in region_json:
             new_region = Region(region['region_name'])
-            new_region.world = self
             if 'scene' in region:
                 new_region.scene = region['scene']
             if 'hint' in region:
@@ -216,7 +215,6 @@ class World(object):
         for region in self.regions:
             for exit in region.exits:
                 exit.connect(self.get_region(exit.connected_region))
-                exit.world = self
 
     def initialize_regions(self):
         for region in self.regions:

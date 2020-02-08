@@ -33,14 +33,15 @@ class Region(object):
         self.exits = []
         self.locations = []
         self.dungeon = None
-        self.world = None
         self.hint = None
         self.price = None
-        self.world = None
         self.time_passes = False
         self.provides_time = TimeOfDay.NONE
         self.scene = None
 
+    @property
+    def world(self):
+        raise Exception("ENTRANCE world SHOULD NOT be referenced")
 
     def copy(self, new_world):
         new_region = Region(self.name, self.type)

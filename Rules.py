@@ -134,9 +134,9 @@ def set_entrances_based_rules(world):
 
     # Use the states with all items available in the pools for this seed
     complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
-    search = Search([world.state])
+    search = Search([world.state.copy()], root_region=world.get_region('Root') )
     search.collect_all(complete_itempool)
-    search.collect_locations()
+    search.collect_locations(world=world)
 
     for location in world.get_locations():
         if location.type == 'Shop':

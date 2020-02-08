@@ -9,7 +9,6 @@ class Dungeon(object):
             else:
                 return [obj]
 
-        self.world = world
         self.name = name
         self.hint = hint
         self.regions = []
@@ -32,6 +31,9 @@ class Dungeon(object):
 
         return new_dungeon
 
+    @property
+    def world(self):
+        raise Exception("ENTRANCE world SHOULD NOT be referenced")
 
     @property
     def keys(self):

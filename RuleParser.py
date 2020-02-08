@@ -50,7 +50,6 @@ def isliteral(expr):
 
 
 class Rule_AST_Transformer(ast.NodeTransformer):
-
     def __init__(self, world):
         self.world = world
         self.events = set()
@@ -64,6 +63,9 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         # final rule cache
         self.rule_cache = {}
 
+    # @property
+    # def world(self):
+    #     raise Exception("AST Transformer world SHOULD NOT be referenced")
 
     def visit_Name(self, node):
         if node.id in dir(self):
@@ -224,10 +226,18 @@ class Rule_AST_Transformer(ast.NodeTransformer):
             return n
 
         # Fast check for json can_use
-        if (len(node.ops) == 1 and isinstance(node.ops[0], ast.Eq)
-                and isinstance(node.left, ast.Name) and isinstance(node.comparators[0], ast.Name)
-                and node.left.id not in self.world.__dict__ and node.comparators[0].id not in self.world.__dict__):
-            return ast.NameConstant(node.left.id == node.comparators[0].id)
+        single_op = len(node.ops) == 1
+        is_eq = isinstance(node.ops[0], ast.Eq)
+
+        if single_op and is_eq:
+            left_is_name = isinstance(node.left, ast.Name)
+            name_comparator = isinstance(node.comparators[0], ast.Name)
+
+            if left_is_name and name_comparator:
+                node_not_in_dict = node.left.id not in self.world.__dict__
+                comparator_not_in_dict = node.comparators[0].id not in self.world.__dict__
+                if left_is_name and name_comparator and node_not_in_dict and comparator_not_in_dict:
+                    return ast.NameConstant(node.left.id == node.comparators[0].id)
 
         node.left = escape_or_string(node.left)
         node.comparators = list(map(escape_or_string, node.comparators))

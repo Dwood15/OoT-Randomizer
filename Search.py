@@ -2,23 +2,32 @@ import copy
 from collections import defaultdict
 import itertools
 
-from Region import TimeOfDay
+from Region import TimeOfDay, Region
 
 
 class Search(object):
 
-    def __init__(self, state_list, initial_cache=None):
-        self.state_list = [state.copy() for state in state_list]
+    def __init__(self, state_list, initial_cache=None, root_region=None):
+        if len(state_list) > 1:
+            raise Exception("Why is there more than one state in the state_list ?!?")
+
+        self.state_list = state_list
 
         # Let the states reference this search.
         for state in self.state_list:
             state.search = self
 
+        if isinstance(initial_cache, Region):
+            raise Exception("Invalid parameter: region")
+
         if initial_cache:
             self._cache = initial_cache
             self.cached_spheres = [self._cache]
         else:
-            root_regions = [state.world.get_region('Root') for state in self.state_list]
+            if root_region is None:
+                raise Exception("ROOT REGION IS NONE")
+
+            root_regions = [ root_region ]
             # The cache is a dict with 5 values:
             #  child_regions, adult_regions: maps of Region -> tod, all the regions in that sphere
             #    values are lazily-determined tod flags (see TimeOfDay).
@@ -95,7 +104,10 @@ class Search(object):
     # Internal to the iteration. Modifies the exit_queue, regions. 
     # Returns a queue of the exits whose access rule failed, 
     # as a cache for the exits to try on the next iteration.
-    def _expand_regions(self, exit_queue, regions, age):
+    def _expand_regions(self, exit_queue, regions, age, world=None):
+        if world is None:
+            raise Exception("world must not be none")
+
         failed = []
         for exit in exit_queue:
             if exit.connected_region and exit.connected_region not in regions:
@@ -131,8 +143,9 @@ class Search(object):
     # the regions accessible as adult, and the set of visited locations.
     # These are references to the new entry in the cache, so they can be modified
     # directly.
-    def next_sphere(self):
-
+    def next_sphere(self, world=None):
+        if world is None:
+            raise Exception("world must not be none")
         # Use the queue to iteratively add regions to the accessed set,
         # until we are stuck or out of regions.
         self._cache.update({
@@ -178,8 +191,11 @@ class Search(object):
     # This collects all item locations available in the state list given that
     # the states have collected items. The purpose is that it will search for
     # all new items that become accessible with a new item set.
-    def collect_locations(self, item_locations=None):
-        item_locations = item_locations or self.progression_locations()
+    def collect_locations(self, item_locations=None, world=None):
+        if world is None:
+            raise Exception("world is None and it shouldn't be")
+
+        item_locations = item_locations or self.progression_locations(world=world)
         for location in self.iter_reachable_locations(item_locations):
             # Collect the item for the state world it is for
             self.collect(location.item)
@@ -191,8 +207,8 @@ class Search(object):
             pass
 
     # Retrieve all item locations in the worlds that have progression items
-    def progression_locations(self):
-        return [location for state in self.state_list for location in state.world.get_locations() if location.item and location.item.advancement]
+    def progression_locations(self, world):
+        return [location for location in world.get_locations() if location.item and location.item.advancement]
 
 
     # This returns True if every state is beatable. It's important to ensure

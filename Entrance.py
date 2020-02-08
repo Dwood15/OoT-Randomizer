@@ -2,11 +2,9 @@ from Region import TimeOfDay
 
 
 class Entrance(object):
-
     def __init__(self, name='', parent=None):
         self.name = name
         self.parent_region = parent
-        self.world = parent.world
         self.connected_region = None
         self.access_rule = lambda state, **kwargs: True
         self.access_rules = []
@@ -34,6 +32,9 @@ class Entrance(object):
 
         return new_entrance
 
+    @property
+    def world(self):
+        raise Exception("ENTRANCE world SHOULD NOT be referenced")
 
     def add_rule(self, lambda_rule):
         self.access_rules.append(lambda_rule)
