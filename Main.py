@@ -147,7 +147,7 @@ def generate(settings, window):
 
     window.update_status('Placing the Items')
     logger.info('Fill the world.')
-    distribute_items_restrictive(window, worlds)
+    distribute_items_restrictive(window, worlds[0])
     window.update_progress(35)
 
     spoiler = Spoiler(worlds)

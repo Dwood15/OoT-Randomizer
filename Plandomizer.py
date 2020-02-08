@@ -400,14 +400,17 @@ class WorldDistribution(object):
                     continue
                 world.state.collect(item)
 
-    def pool_replace_item(self, item_pools, item_group, player_id, new_item, worlds):
+    def pool_replace_item(self, item_pools, item_group, player_id, new_item, world):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
         removed_item = self.pool_remove_item(item_pools, item_group, 1, world_id=player_id)[0]
         item_matcher = lambda item: pattern_matcher(new_item)(item.name)
         if self.item_pool[removed_item.name].count > 1:
             self.item_pool[removed_item.name].count -= 1
         else:
             del self.item_pool[removed_item.name]
-        return random.choice(list(ItemIterator(item_matcher, worlds[player_id])))
+        return random.choice(list(ItemIterator(item_matcher, world)))
 
     def set_shuffled_entrances(self, worlds, entrance_pools, target_entrance_pools, locations_to_ensure_reachable, itempool):
         for (name, record) in self.entrances.items():
@@ -495,8 +498,10 @@ class WorldDistribution(object):
         return count
 
 
-    def fill(self, window, worlds, location_pools, item_pools):
-        world = worlds[self.id]
+    def fill(self, window, world, location_pools, item_pools):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
         locations = {}
         if self.locations:
             locations = {loc: self.locations[loc] for loc in random.sample(self.locations.keys(), len(self.locations))}
@@ -507,12 +512,12 @@ class WorldDistribution(object):
                         continue
                     item = None
                     if starting_item in item_groups['Bottle']:
-                        item = self.pool_replace_item(item_pools, "#Bottle", self.id, "#Junk", worlds)
+                        item = self.pool_replace_item(item_pools, "#Bottle", self.id, "#Junk", world)
                     elif starting_item in item_groups['AdultTrade']:
-                        item = self.pool_replace_item(item_pools, "#AdultTrade", self.id, "#Junk", worlds)
+                        item = self.pool_replace_item(item_pools, "#AdultTrade", self.id, "#Junk", world)
                     elif IsItem(starting_item):
                         try:
-                            item = self.pool_replace_item(item_pools, starting_item, self.id, "#Junk", worlds)
+                            item = self.pool_replace_item(item_pools, starting_item, self.id, "#Junk", world)
                         except KeyError:
                             pass  # If a normal item exceeds the item pool count, continue.
                 except KeyError:
@@ -680,13 +685,16 @@ class Distribution(object):
                 print('Cannot place item at excluded location because it already has an item defined in the Distribution.')
 
 
-    def fill(self, window, worlds, location_pools, item_pools):
-        search = Search.max_explore([world.state for world in worlds], itertools.chain.from_iterable(item_pools))
+    def fill(self, window, world, location_pools, item_pools):
+        if isinstance(world, list):
+            raise Exception("still passing in a list when we shouldn't !!")
+
+        search = Search.max_explore([world.state], itertools.chain.from_iterable(item_pools))
         if not search.can_beat_game(False):
             raise FillError('Item pool does not contain items required to beat game!')
 
         for world_dist in self.world_dists:
-            world_dist.fill(window, worlds, location_pools, item_pools)
+            world_dist.fill(window, world, location_pools, item_pools)
 
 
     def cloak(self, worlds, location_pools, model_pools):

@@ -22,39 +22,41 @@ class FillError(ShuffleError):
 
 
 # Places all items into the world
-def distribute_items_restrictive(window, worlds, fill_locations=None):
-    song_locations = [world.get_location(location) for world in worlds for location in
+def distribute_items_restrictive(window, world, fill_locations=None):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
+
+    song_locations = [world.get_location(location) for location in
         ['Song from Composer Grave', 'Impa at Castle', 'Song from Malon', 'Song from Saria',
         'Song from Ocarina of Time', 'Song at Windmill', 'Sheik Forest Song', 'Sheik at Temple',
         'Sheik in Crater', 'Sheik in Ice Cavern', 'Sheik in Kakariko', 'Sheik at Colossus']]
 
-    shop_locations = [location for world in worlds for location in world.get_unfilled_locations() if location.type == 'Shop' and location.price == None]
+    shop_locations = [location for location in world.get_unfilled_locations() if location.type == 'Shop' and location.price == None]
 
     # If not passed in, then get a shuffled list of locations to fill in
     if not fill_locations:
-        fill_locations = [location for world in worlds for location in world.get_unfilled_locations() \
+        fill_locations = [location for location in world.get_unfilled_locations() \
             if location not in song_locations and \
                location not in shop_locations and \
                location.type != 'GossipStone']
-    world_states = [world.state for world in worlds]
 
     window.locationcount = len(fill_locations) + len(song_locations) + len(shop_locations)
     window.fillcount = 0
 
     # Generate the itempools
-    shopitempool = [item for world in worlds for item in world.itempool if item.type == 'Shop']
-    songitempool = [item for world in worlds for item in world.itempool if item.type == 'Song']
-    itempool =     [item for world in worlds for item in world.itempool if item.type != 'Shop' and item.type != 'Song']
+    shopitempool = [item for item in world.itempool if item.type == 'Shop']
+    songitempool = [item for item in world.itempool if item.type == 'Song']
+    itempool =     [item for item in world.itempool if item.type != 'Shop' and item.type != 'Song']
 
-    if worlds[0].shuffle_song_items:
+    if world.shuffle_song_items:
         itempool.extend(songitempool)
         fill_locations.extend(song_locations)
         songitempool = []
         song_locations = []
 
     # add unrestricted dungeon items to main item pool
-    itempool.extend([item for world in worlds for item in world.get_unrestricted_dungeon_items()])
-    dungeon_items = [item for world in worlds for item in world.get_restricted_dungeon_items()]
+    itempool.extend([item for item in world.get_unrestricted_dungeon_items()])
+    dungeon_items = [item for item in world.get_restricted_dungeon_items()]
 
     random.shuffle(itempool) # randomize item placement order. this ordering can greatly affect the location accessibility bias
     progitempool = [item for item in itempool if item.advancement]
@@ -68,18 +70,18 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     major_items = [item for (item, data) in item_table.items() if data[0] == 'Item' and data[1] and data[2] is not None]
     fake_items = []
     model_items = []
-    if worlds[0].settings.ice_trap_appearance == 'major_only':
+    if world.settings.ice_trap_appearance == 'major_only':
         model_items = [item for item in itempool if item.majoritem]
         if len(model_items) == 0: # All major items were somehow removed from the pool (can happen in plando)
-            model_items = ItemFactory(major_items)
-    elif worlds[0].settings.ice_trap_appearance == 'junk_only':
+            model_items = ItemFactory(major_items, world)
+    elif world.settings.ice_trap_appearance == 'junk_only':
         model_items = [item for item in itempool if item.name in junk_items]
         if len(model_items) == 0: # All junk was removed
-            model_items = ItemFactory(junk_items)
+            model_items = ItemFactory(junk_items, world)
     else: # world[0].settings.ice_trap_appearance == 'anything':
         model_items = [item for item in itempool if item.name != 'Ice Trap']
         if len(model_items) == 0: # All major items and junk were somehow removed from the pool (can happen in plando)
-            model_items = ItemFactory(major_items) + ItemFactory(junk_items)
+            model_items = ItemFactory(major_items, world) + ItemFactory(junk_items, world)
     while len(ice_traps) > len(fake_items):
         # if there are more ice traps than model items, then double up on model items
         fake_items.extend(model_items)
@@ -89,11 +91,11 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
 
     cloakable_locations = shop_locations + song_locations + fill_locations
     all_models = shopitempool + dungeon_items + songitempool + itempool
-    worlds[0].settings.distribution.fill(window, worlds, [shop_locations, song_locations, fill_locations], [shopitempool, dungeon_items, songitempool, progitempool, prioitempool, restitempool])
+    world.settings.distribution.fill(window, world, [shop_locations, song_locations, fill_locations], [shopitempool, dungeon_items, songitempool, progitempool, prioitempool, restitempool])
     itempool = progitempool + prioitempool + restitempool
 
     # Start a search cache here.
-    search = Search([world.state for world in worlds])
+    search = Search([world.state])
 
     # We place all the shop items first. Like songs, they have a more limited
     # set of locations that they can be placed in, so placing them first will
@@ -102,10 +104,9 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     # or not. This shouldn't have much affect on item bias.
     if shop_locations:
         logger.info('Placing shop items.')
-        fill_ownworld_restrictive(window, worlds[0], search, shop_locations, shopitempool, itempool + songitempool + dungeon_items, "shop")
+        fill_ownworld_restrictive(window, world, search, shop_locations, shopitempool, itempool + songitempool + dungeon_items, "shop")
     # Update the shop item access rules
-    for world in worlds:
-        set_shop_rules(world)
+    set_shop_rules(world)
 
     search.collect_locations()
 
@@ -115,7 +116,7 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     # placement, but will leave as is for now
     if dungeon_items:
         logger.info('Placing dungeon items.')
-        fill_dungeons_restrictive(window, worlds, search, fill_locations, dungeon_items, itempool + songitempool)
+        fill_dungeons_restrictive(window, world, search, fill_locations, dungeon_items, itempool + songitempool)
         search.collect_locations()
 
     # places the songs into the world
@@ -124,25 +125,24 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     # Placing songs on their own since they have a relatively high chance
     # of failing compared to other item type. So this way we only have retry
     # the song locations only.
-    if not worlds[0].shuffle_song_items:
+    if not world.shuffle_song_items:
         logger.info('Placing song items.')
-        wrld = worlds[0]
-        fill_ownworld_restrictive(window, wrld, search, song_locations, songitempool, progitempool, "song")
+        fill_ownworld_restrictive(window, world, search, song_locations, songitempool, progitempool, "song")
         search.collect_locations()
         fill_locations += [location for location in song_locations if location.item is None]
 
     # Put one item in every dungeon, needs to be done before other items are
     # placed to ensure there is a spot available for them
-    if worlds[0].one_item_per_dungeon:
+    if world.one_item_per_dungeon:
         logger.info('Placing one major item per dungeon.')
-        fill_dungeon_unique_item(window, worlds, search, fill_locations, progitempool)
+        fill_dungeon_unique_item(window, world, search, fill_locations, progitempool)
         search.collect_locations()
 
     # Place all progression items. This will include keys in keysanity.
     # Items in this group will check for reachability and will be placed
     # such that the game is guaranteed beatable.
     logger.info('Placing progression items.')
-    fill_restrictive(window, worlds[0], search, fill_locations, progitempool)
+    fill_restrictive(window, world, search, fill_locations, progitempool)
     search.collect_locations()
 
     # Place all priority items.
@@ -150,7 +150,7 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     # placed in the location, not checking reachability. This is important
     # for things like Ice Traps that can't be found at some locations
     logger.info('Placing priority items.')
-    fill_restrictive_fast(window, worlds, fill_locations, prioitempool)
+    fill_restrictive_fast(window, world, fill_locations, prioitempool)
 
     # Place the rest of the items.
     # No restrictions at all. Places them completely randomly. Since they
@@ -173,28 +173,31 @@ def distribute_items_restrictive(window, worlds, fill_locations=None):
     if not search.can_beat_game():
         raise FillError('Cannot beat game!')
 
-    worlds[0].settings.distribution.cloak(worlds, [cloakable_locations], [all_models])
+    #TODO cloak == single-world
+    world.settings.distribution.cloak([world], [cloakable_locations], [all_models])
 
-    for world in worlds:
-        for location in world.get_filled_locations():
-            # Get the maximum amount of wallets required to purchase an advancement item.
-            if world.maximum_wallets < 3 and location.price and location.item.advancement:
-                if location.price > 500:
-                    world.maximum_wallets = 3
-                elif world.maximum_wallets < 2 and location.price > 200:
-                    world.maximum_wallets = 2
-                elif world.maximum_wallets < 1 and location.price > 99:
-                    world.maximum_wallets = 1
 
-            # Get Light Arrow location for later usage.
-            if location.item and location.item.name == 'Light Arrows':
-                world.light_arrow_location = location
+    for location in world.get_filled_locations():
+        # Get the maximum amount of wallets required to purchase an advancement item.
+        if world.maximum_wallets < 3 and location.price and location.item.advancement:
+            if location.price > 500:
+                world.maximum_wallets = 3
+            elif world.maximum_wallets < 2 and location.price > 200:
+                world.maximum_wallets = 2
+            elif world.maximum_wallets < 1 and location.price > 99:
+                world.maximum_wallets = 1
+
+        # Get Light Arrow location for later usage.
+        if location.item and location.item.name == 'Light Arrows':
+            world.light_arrow_location = location
 
 
 # Places restricted dungeon items into the worlds. To ensure there is room for them.
 # they are placed first so it will assume all other items are reachable
-def fill_dungeons_restrictive(window, worlds, search, shuffled_locations, dungeon_items, itempool):
-    world = worlds[0]
+def fill_dungeons_restrictive(window, world, search, shuffled_locations, dungeon_items, itempool):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
+
     # List of states with all non-key items
     base_search = search.copy()
     base_search.collect_all(itempool)
@@ -216,7 +219,10 @@ def fill_dungeons_restrictive(window, worlds, search, shuffled_locations, dungeo
 # Places items into dungeon locations. This is used when there should be exactly
 # one progression item per dungeon. This should be ran before all the progression
 # items are places to ensure there is space to place them.
-def fill_dungeon_unique_item(window, worlds, search, fill_locations, itempool):
+def fill_dungeon_unique_item(window, world, search, fill_locations, itempool):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
+
     # We should make sure that we don't count event items, shop items,
     # token items, or dungeon items as a major item. itempool at this
     # point should only be able to have tokens of those restrictions
@@ -224,7 +230,10 @@ def fill_dungeon_unique_item(window, worlds, search, fill_locations, itempool):
     major_items = [item for item in itempool if item.majoritem]
     minor_items = [item for item in itempool if not item.majoritem]
 
-    dungeons = [dungeon for world in worlds for dungeon in world.dungeons]
+    #TEMPORARY
+    worlds = [world]
+
+    dungeons = [dungeon for dungeon in world.dungeons]
     double_dungeons = []
     for dungeon in dungeons:
         # we will count spirit temple twice so that it gets 2 items to match vanilla
@@ -248,7 +257,7 @@ def fill_dungeon_unique_item(window, worlds, search, fill_locations, itempool):
         all_dungeon_locations.extend(dungeon_locations)
 
         # place 1 item into the dungeon
-        fill_restrictive(window, worlds[0], base_search, dungeon_locations, major_items, 1)
+        fill_restrictive(window, world, base_search, dungeon_locations, major_items, 1)
 
         # update the location and item pool, removing any placed items and filled locations
         # the fact that you can remove items from a list you're iterating over is python magic
@@ -439,7 +448,10 @@ def fill_restrictive(window, world, base_search, locations, itempool, count=-1):
 # This places items in the itempool into the locations
 # It does not check for reachability, only that the item is
 # allowed in the location
-def fill_restrictive_fast(window, worlds, locations, itempool):
+def fill_restrictive_fast(window, world, locations, itempool):
+    if isinstance(world, list):
+        raise Exception("still passing in a list when we shouldn't !!")
+
     while itempool and locations:
         item_to_place = itempool.pop()
         random.shuffle(locations)
@@ -455,7 +467,7 @@ def fill_restrictive_fast(window, worlds, locations, itempool):
         # we don't need to check beatability since world must be beatable
         # at this point
         if spot_to_fill is None:
-            if not worlds[0].settings.check_beatable_only:
+            if not world.settings.check_beatable_only:
                 logger.debug('Not all items placed. Game beatable anyway.')
             break
 
