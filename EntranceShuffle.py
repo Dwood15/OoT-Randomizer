@@ -309,9 +309,7 @@ def set_entrances(world):
 
     world.initialize_entrances()
 
-    if world.entrance_shuffle != 'off':
-        shuffle_random_entrances(world)
-
+    shuffle_random_entrances(world)
     set_entrances_based_rules(world)
 
 
@@ -404,15 +402,15 @@ def shuffle_random_entrances(world):
                 delete_target_entrance(target)
 
     # Multiple checks after shuffling entrances to make sure everything went fine
-    max_search = Search.max_explore([world.state], complete_itempool)
+    max_search = Search.max_explore([world.state], complete_itempool, world)
 
     # Check that all shuffled entrances are properly connected to a region
     for entrance in world.get_shuffled_entrances():
-        if entrance.connected_region == None:
+        if not entrance.connected_region:
             logging.getLogger('').error('%s was shuffled but still isn\'t connected to any region [World %d]', entrance, 0)
 
     # Check for game beatability in all worlds
-    if not max_search.can_beat_game(False):
+    if not max_search.can_beat_game(False, world=world):
         raise EntranceShuffleError('Cannot beat game!')
 
     # Validate the worlds one last time to ensure all special conditions are still valid
@@ -423,9 +421,12 @@ def shuffle_random_entrances(world):
 
 
 # Shuffle all entrances within a provided pool
-def shuffle_entrance_pool(world, entrance_pool, target_entrances, locations_to_ensure_reachable, retry_count=20):
+def shuffle_entrance_pool(world, entrance_pool, target_entrances, locations_to_ensure_reachable, num_calls=0):
     if isinstance(world, list):
         raise Exception("still passing in a list when we shouldn't !!")
+
+    num_calls += 1
+    retry_count = 20
 
     # Split entrances between those that have requirements (restrictive) and those that do not (soft). These are primarily age or time of day requirements.
     restrictive_entrances, soft_entrances = split_entrances_by_requirements(world, entrance_pool, target_entrances)
@@ -456,7 +457,7 @@ def shuffle_entrance_pool(world, entrance_pool, target_entrances, locations_to_e
             logging.getLogger('').info('Failed to place all entrances in a pool for world %d. Will retry %d more times', 0, retry_count)
             logging.getLogger('').info('\t%s' % error)
 
-    raise EntranceShuffleError('Entrance placement attempt count exceeded for world %d' % 0)
+    raise EntranceShuffleError('Entrance placement attempt count exceeded for world 0, number of calls: %d' % num_calls)
 
 
 # Split entrances based on their requirements to figure out how each entrance should be handled when shuffling them
@@ -557,7 +558,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
                 if not max_search.visited(location):
                     raise EntranceShuffleError('%s is unreachable' % location.name)
 
-    none_ent_placed = entrance_placed == None
+    none_ent_placed = entrance_placed is None
 
     if (none_ent_placed and world.settings.shuffle_special_indoor_entrances) or \
        (not none_ent_placed and entrance_placed.type in ['SpecialInterior', 'Overworld']):
@@ -593,7 +594,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
 
         # At least one valid starting region with all basic refills should be reachable without using any items at the beginning of the seed
         # Note this creates an empty State rather than reuse world.state (which already has starting items).
-        no_items_search = Search([State(world)])
+        no_items_search = Search([State(world)], root_region=world.get_root_exits(), world=world)
 
         valid_starting_regions = ['Kokiri Forest', 'Kakariko Village']
 
@@ -601,10 +602,10 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
             raise EntranceShuffleError('Invalid starting area')
 
         # Check that a region where time passes is always reachable as both ages without having collected any items (except in closed forest)
-        time_travel_search = Search.with_items([world.state], [ItemFactory('Time Travel', world_id=0)])
+        time_travel_search = Search.with_items([world.state], [ItemFactory('Time Travel', world_id=0)], world=world)
 
-        if not (any(region for region in time_travel_search.reachable_regions('child') if region.time_passes and region.world == world) and
-                any(region for region in time_travel_search.reachable_regions('adult') if region.time_passes and region.world == world)):
+        if not (any(region for region in time_travel_search.reachable_regions('child') if region.time_passes) and
+                any(region for region in time_travel_search.reachable_regions('adult') if region.time_passes)):
             raise EntranceShuffleError('Time passing is not guaranteed as both ages')
 
         # When starting as adult, child Link should be able to reach ToT without having collected any items
@@ -613,7 +614,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
             if world.starting_age == 'adult' and not time_travel_search.can_reach(world.get_region('Temple of Time'), age='child'):
                 raise EntranceShuffleError('Links House to Temple of Time path as child is not guaranteed')
 
-    if entrance_placed == None or (entrance_placed != None and entrance_placed.type in ['Interior', 'SpecialInterior', 'Overworld']):
+    if none_ent_placed or (not none_ent_placed and entrance_placed.type in ['Interior', 'SpecialInterior', 'Overworld']):
         # The Big Poe Shop should always be accessible as adult without the need to use any bottles
         # Since we can't guarantee that items in the pool won't be placed behind bottles, we guarantee the access without using any items
         # This is important to ensure that players can never lock their only bottles by filling them with Big Poes they can't sell
@@ -622,27 +623,26 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
         if not no_items_time_travel_search.can_reach(world.get_region('Castle Town Rupee Room'), age='adult'):
             raise EntranceShuffleError('Big Poe Shop access is not guaranteed as adult')
 
-        if world.shuffle_cows:
-            impas_front_entrance = get_entrance_replacing(world.get_region('Impas House'), 'Kakariko Village -> Impas House')
-            impas_back_entrance = get_entrance_replacing(world.get_region('Impas House Back'), 'Kakariko Impa Ledge -> Impas House Back')
-            check_same_hint_region(impas_front_entrance, impas_back_entrance)
-
     return
 
 
 # Shorthand function to check and validate that two entrances are in the same hint region
 def check_same_hint_region(first, second):
-    if  first.parent_region.hint is not None and second.parent_region.hint is not None and \
-        first.parent_region.hint != second.parent_region.hint:
+    if first.parent_region.hint is None or second.parent_region.hint is None:
+        return
+    if first.parent_region.hint != second.parent_region.hint:
         raise EntranceShuffleError('Entrances are not in the same hint region')
 
 
 # Shorthand function to find an entrance with the requested name leading to a specific region
-def get_entrance_replacing(region, entrance_name):
+def get_entrance_replacing(region, entrance_name, world=None):
+    if world is None:
+        raise Exception("world must not be none")
+
     try:
         return next(filter(lambda entrance: entrance.replaces and entrance.replaces.name == entrance_name, region.entrances))
     except StopIteration:
-        return region.world.get_entrance(entrance_name)
+        return world.get_entrance(entrance_name)
 
 
 # Change connections between an entrance and a target assumed entrance, in order to test the connections afterwards if necessary

@@ -230,9 +230,6 @@ def fill_dungeon_unique_item(window, world, search, fill_locations, itempool):
     major_items = [item for item in itempool if item.is_majoritem(world.settings)]
     minor_items = [item for item in itempool if not item.is_majoritem(world.settings)]
 
-    #TEMPORARY
-    worlds = [world]
-
     dungeons = [dungeon for dungeon in world.dungeons]
     double_dungeons = []
     for dungeon in dungeons:
@@ -246,7 +243,7 @@ def fill_dungeon_unique_item(window, world, search, fill_locations, itempool):
 
     base_search = search.copy()
     base_search.collect_all(minor_items)
-    base_search.collect_locations()
+    base_search.collect_locations(world=world)
     all_dungeon_locations = []
 
     # iterate of all the dungeons in a random order, placing the item there

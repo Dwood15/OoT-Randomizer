@@ -473,11 +473,11 @@ def create_playthrough(spoiler):
             old_connected_region = entrance.disconnect()
 
             # we use a new search to ensure the disconnected entrance is no longer used
-            sub_search = Search([world.state for world in worlds])
+            sub_search = Search([world.state], root_region=world.get_root_exits(), world=world)
 
             # Test whether the game is still beatable from here.
             logger.debug('Checking if reaching %s, through %s, is required to beat the game.', old_connected_region.name, entrance.name)
-            if not sub_search.can_beat_game():
+            if not sub_search.can_beat_game(world=world):
                 # still required, so reconnect the entrance
                 entrance.connect(old_connected_region)
                 required_entrances.append(entrance)

@@ -213,12 +213,6 @@ class World(object):
             for exit in region.exits:
                 exit.connect(self.get_region(exit.connected_region))
 
-    def initialize_regions(self):
-        for region in self.regions:
-            region.world = self
-            for location in region.locations:
-                location.world = self
-
     def random_shop_prices(self):
         shop_item_indexes = ['7', '5', '8', '6']
         self.shop_prices = {}
@@ -355,11 +349,18 @@ class World(object):
         try:
             return self._entrance_cache[entrance]
         except KeyError:
+            all_exit_names = []
+            exact_exit = None
             for region in self.regions:
                 for exit in region.exits:
-                    if exit.name == entrance:
-                        self._entrance_cache[entrance] = exit
-                        return exit
+                    all_exit_names.append(exit.name)
+                    if entrance == exit.name:
+                        exact_exit = exit
+
+            if exact_exit is not None:
+                self._entrance_cache[entrance] = exact_exit
+                return exact_exit
+
             raise KeyError('No such entrance %s' % entrance)
 
     def get_location(self, location):
