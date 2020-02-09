@@ -435,29 +435,29 @@ def shuffle_entrance_pool(world, entrance_pool, target_entrances, locations_to_e
         retry_count -= 1
         rollbacks = []
 
-        try:
-            # Shuffle restrictive entrances first while more regions are available in order to heavily reduce the chances of the placement failing.
-            shuffle_entrances(world, restrictive_entrances, target_entrances, rollbacks, locations_to_ensure_reachable)
+        # try:
+        # Shuffle restrictive entrances first while more regions are available in order to heavily reduce the chances of the placement failing.
+        shuffle_entrances(world, restrictive_entrances, target_entrances, rollbacks, locations_to_ensure_reachable)
 
-            # Shuffle the rest of the entrances, we don't have to check for beatability or reachability of locations when placing those
-            shuffle_entrances(world, soft_entrances, target_entrances, rollbacks)
+        # Shuffle the rest of the entrances, we don't have to check for beatability or reachability of locations when placing those
+        shuffle_entrances(world, soft_entrances, target_entrances, rollbacks)
 
-            # Fully validate the resulting worlds to ensure everything is still fine after shuffling this pool
-            complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
-            validate_worlds(world, None, locations_to_ensure_reachable, complete_itempool)
+        # Fully validate the resulting worlds to ensure everything is still fine after shuffling this pool
+        complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
+        validate_worlds(world, None, locations_to_ensure_reachable, complete_itempool)
 
-            # If all entrances could be connected without issues, log connections and continue
-            for entrance, target in rollbacks:
-                confirm_replacement(entrance, target)
-            return
+        # If all entrances could be connected without issues, log connections and continue
+        for entrance, target in rollbacks:
+            confirm_replacement(entrance, target)
+        return
 
-        except EntranceShuffleError as error:
-            for entrance, target in rollbacks:
-                restore_connections(entrance, target)
-            logging.getLogger('').info('Failed to place all entrances in a pool for world %d. Will retry %d more times', 0, retry_count)
-            logging.getLogger('').info('\t%s' % error)
+        # except EntranceShuffleError as error:
+        #     for entrance, target in rollbacks:
+        #         restore_connections(entrance, target)
+        #     logging.getLogger('').info('Failed to place all entrances in a pool for world %d. Will retry %d more times', 0, retry_count)
+        #     logging.getLogger('').info('\t%s' % error)
 
-    raise EntranceShuffleError('Entrance placement attempt count exceeded for world 0, number of calls: %d' % num_calls)
+    # raise EntranceShuffleError('Entrance placement attempt count exceeded for world 0, number of calls: %d' % num_calls)
 
 
 # Split entrances based on their requirements to figure out how each entrance should be handled when shuffling them
@@ -511,19 +511,18 @@ def shuffle_entrances(world, entrances, target_entrances, rollbacks, locations_t
 
     # Place all entrances in the pool, validating worlds during every placement
     for entrance in entrances:
-        if entrance.connected_region != None:
+        if entrance.connected_region is not None:
             continue
         random.shuffle(target_entrances)
 
         for target in target_entrances:
-            if target.connected_region == None:
+            if target.connected_region is None:
                 continue
 
             # An entrance shouldn't be connected to its own scene, so we fail in that situation
             if entrance.parent_region.scene and entrance.parent_region.scene == target.connected_region.scene:
-                logging.getLogger('').debug('Failed to connect %s To %s (Reason: Self scene connections are forbidden) [World %d]',
-                                            entrance, target.connected_region, 0)
-                continue
+                raise EntranceShuffleError('Failed to connect %s To %s (Reason: Self scene connections are forbidden) [World %d]',
+                                           entrance, target.connected_region, 0)
 
             change_connections(entrance, target)
 
@@ -537,7 +536,7 @@ def shuffle_entrances(world, entrances, target_entrances, rollbacks, locations_t
                                             entrance, entrance.connected_region, error,0)
                 restore_connections(entrance, target)
 
-        if entrance.connected_region == None:
+        if entrance.connected_region is None:
             raise EntranceShuffleError('No more valid entrances to replace with %s in world %d' % (entrance, 0))
 
 
@@ -562,31 +561,31 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
 
     if (none_ent_placed and world.settings.shuffle_special_indoor_entrances) or \
        (not none_ent_placed and entrance_placed.type in ['SpecialInterior', 'Overworld']):
-        if max_search == None:
+        if not max_search:
             max_search = Search.max_explore([world.state], itempool, world)
 
         # Links House entrance should be reachable as child at some point in the seed
-        links_house_entrance = get_entrance_replacing(world.get_region('Links House'), 'Kokiri Forest -> Links House')
+        links_house_entrance = get_entrance_replacing(world.get_region('Links House'), 'Kokiri Forest -> Links House', world)
         if not max_search.spot_access(links_house_entrance, age='child'):
             raise EntranceShuffleError('Links House Entrance is never reachable as child')
 
         # Temple of Time entrance should be reachable as both ages at some point in the seed
-        temple_of_time_entrance = get_entrance_replacing(world.get_region('Temple of Time'), 'Temple of Time Exterior -> Temple of Time')
+        temple_of_time_entrance = get_entrance_replacing(world.get_region('Temple of Time'), 'Temple of Time Exterior -> Temple of Time', world)
         if not max_search.spot_access(temple_of_time_entrance, age='both'):
             raise EntranceShuffleError('Temple of Time Entrance is never reachable as both ages')
 
         # Windmill door entrance should be reachable as both ages at some point in the seed
-        windmill_door_entrance = get_entrance_replacing(world.get_region('Windmill'), 'Kakariko Village -> Windmill')
+        windmill_door_entrance = get_entrance_replacing(world.get_region('Windmill'), 'Kakariko Village -> Windmill', world)
         if not max_search.spot_access(windmill_door_entrance, age='both'):
             raise EntranceShuffleError('Windmill Door Entrance is never reachable as both ages')
 
         # Potion Shop front door should be reachable as both ages at some point in the seed
-        potion_front_entrance = get_entrance_replacing(world.get_region('Kakariko Potion Shop Front'), 'Kakariko Village -> Kakariko Potion Shop Front')
+        potion_front_entrance = get_entrance_replacing(world.get_region('Kakariko Potion Shop Front'), 'Kakariko Village -> Kakariko Potion Shop Front', world)
         if not max_search.spot_access(potion_front_entrance, age='both'):
             raise EntranceShuffleError('Adult Potion Front Entrance is never reachable as both ages')
 
         # Potion Shop back door should be reachable as adult at some point in the seed
-        potion_back_entrance = get_entrance_replacing(world.get_region('Kakariko Potion Shop Back'), 'Kakariko Village Backyard -> Kakariko Potion Shop Back')
+        potion_back_entrance = get_entrance_replacing(world.get_region('Kakariko Potion Shop Back'), 'Kakariko Village Backyard -> Kakariko Potion Shop Back', world)
         if not max_search.spot_access(potion_back_entrance, age='adult'):
             raise EntranceShuffleError('Adult Potion Back Entrance is never reachable as Adult')
 

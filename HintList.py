@@ -61,9 +61,9 @@ def getRequiredHints(world):
 conditional_always = {
     '10 Big Poes':               lambda world: world.big_poe_count > 3,
     'Deku Theater Skull Mask':   lambda world: world.settings.hint_dist == 'tournament',
-    'Song from Ocarina of Time': lambda world: world.settings.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
-    'Ocarina of Time':           lambda world: world.settings.bridge not in ('stones', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
-    'Sheik in Kakariko':         lambda world: world.settings.bridge not in ('medallions', 'dungeons') and world.shuffle_ganon_bosskey not in ('lacs_medallions', 'lacs_dungeons'),
+    'Song from Ocarina of Time': lambda world: world.settings.bridge not in ('stones', 'dungeons') and world.settings.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
+    'Ocarina of Time':           lambda world: world.settings.bridge not in ('stones', 'dungeons') and world.settings.shuffle_ganon_bosskey not in ('lacs_stones', 'lacs_dungeons'),
+    'Sheik in Kakariko':         lambda world: world.settings.bridge not in ('medallions', 'dungeons') and world.settings.shuffle_ganon_bosskey not in ('lacs_medallions', 'lacs_dungeons'),
     'Biggoron':                  lambda world: world.logic_earliest_adult_trade != 'claim_check' or world.logic_latest_adult_trade != 'claim_check',
     '50 Gold Skulltula Reward':  lambda world: world.settings.bridge != 'tokens' or world.settings.bridge_tokens < 50,
     '40 Gold Skulltula Reward':  lambda world: world.settings.bridge != 'tokens' or world.settings.bridge_tokens < 40,

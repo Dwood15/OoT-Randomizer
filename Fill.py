@@ -48,7 +48,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     songitempool = [item for item in world.itempool if item.type == 'Song']
     itempool =     [item for item in world.itempool if item.type != 'Shop' and item.type != 'Song']
 
-    if world.shuffle_song_items:
+    if world.settings.shuffle_song_items:
         itempool.extend(songitempool)
         fill_locations.extend(song_locations)
         songitempool = []
@@ -125,7 +125,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     # Placing songs on their own since they have a relatively high chance
     # of failing compared to other item type. So this way we only have retry
     # the song locations only.
-    if not world.shuffle_song_items:
+    if not world.settings.shuffle_song_items:
         logger.info('Placing song items.')
         fill_ownworld_restrictive(window, world, search, song_locations, songitempool, progitempool, "song")
         search.collect_locations(world=world)
@@ -133,7 +133,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
 
     # Put one item in every dungeon, needs to be done before other items are
     # placed to ensure there is a spot available for them
-    if world.one_item_per_dungeon:
+    if world.settings.one_item_per_dungeon:
         logger.info('Placing one major item per dungeon.')
         fill_dungeon_unique_item(window, world, search, fill_locations, progitempool)
         search.collect_locations(world=world)
