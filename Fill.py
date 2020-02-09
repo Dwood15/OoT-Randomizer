@@ -162,7 +162,7 @@ def distribute_items_restrictive(window, world, fill_locations=None):
     for item in progitempool + prioitempool + restitempool:
         logger.error('Unplaced Items: %s [World %d]' % (item.name, item.world_id))
     for location in fill_locations:
-        logger.error('Unfilled Locations: %s [World %d]' % (location.name, location.world.id))
+        logger.error('Unfilled Locations: %s [World %d]' % (location.name, 0))
 
     if progitempool + prioitempool + restitempool:
         raise FillError('Not all items are placed.')
@@ -283,15 +283,15 @@ def fill_ownworld_restrictive(window, world, search, locations, ownpool, itempoo
     unplaced_prizes = [item for item in ownpool if item.name not in placed_prizes]
     empty_locations = [loc for loc in locations if loc.item is None]
 
-    prizepool_dict = {world.id: [item for item in unplaced_prizes]}
-    prize_locs_dict = {world.id: [loc for loc in empty_locations]}
+    prizepool_dict = {0: [item for item in unplaced_prizes]}
+    prize_locs_dict = {0: [loc for loc in empty_locations]}
 
     # Shop item being sent in to this method are tied to their own world.
     # Therefore, let's do this one world at a time. We do this to help
     # increase the chances of successfully placing songs
 
     # List of states with all items
-    unplaced_prizes = [item for item in unplaced_prizes if item not in prizepool_dict[world.id]]
+    unplaced_prizes = [item for item in unplaced_prizes if item not in prizepool_dict[0]]
     base_search = search.copy()
     base_search.collect_all(itempool + unplaced_prizes)
 
@@ -299,15 +299,15 @@ def fill_ownworld_restrictive(window, world, search, locations, ownpool, itempoo
     while world_attempts:
         world_attempts -= 1
         try:
-            prizepool = list(prizepool_dict[world.id])
-            prize_locs = list(prize_locs_dict[world.id])
+            prizepool = list(prizepool_dict[0])
+            prize_locs = list(prize_locs_dict[0])
             random.shuffle(prizepool)
             fill_restrictive(window, world, base_search, prize_locs, prizepool)
 
-            logger.info("Placed %s items for world %s.", description, (world.id+1))
+            logger.info("Placed %s items for world %s.", description, (0+1))
         except FillError as e:
-            logger.info("Failed to place %s items for world %s. Will retry %s more times.", description, (world.id+1), world_attempts)
-            for location in prize_locs_dict[world.id]:
+            logger.info("Failed to place %s items for world %s. Will retry %s more times.", description, (0+1), world_attempts)
+            for location in prize_locs_dict[0]:
                 location.item = None
                 if location.disabled == DisableType.DISABLED:
                     location.disabled = DisableType.PENDING
@@ -315,7 +315,7 @@ def fill_ownworld_restrictive(window, world, search, locations, ownpool, itempoo
             continue
         break
     else:
-        raise FillError('Unable to place %s items in world %d' % (description, (world.id+1)))
+        raise FillError('Unable to place %s items in world %d' % (description, (0+1)))
 
 
 

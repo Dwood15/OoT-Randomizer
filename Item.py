@@ -183,7 +183,7 @@ def MakeEventItem(name, location, world=None):
     if world is None:
         raise Exception("MakeEventItem: world should never be none, but it is anyway. RIP")
 
-    item = ItemFactory(name, world.id, event=True)
+    item = ItemFactory(name, 0, event=True)
     world.push_item(location, item)
 
     location.locked = True
@@ -202,6 +202,6 @@ def ItemIterator(predicate=lambda loc: True, world=None):
         raise Exception("world should never be none, but it is anyway. RIP")
 
     for item_name in item_table:
-        item = ItemFactory(item_name, world.id)
+        item = ItemFactory(item_name, 0)
         if predicate(item):
             yield item

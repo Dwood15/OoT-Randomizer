@@ -51,7 +51,7 @@ class Spoiler(object):
         self.entrances = []
         self.metadata = {}
         self.required_locations = {}
-        self.hints = {world.id: {}}
+        self.hints = {0: {}}
         self.file_hash = []
 
     def build_file_hash(self):
@@ -71,14 +71,14 @@ class Spoiler(object):
             spoiler_locations = [location for location in world.get_locations() if not location.locked and location.type != 'GossipStone']
             sort_order = {"Song": 0, "Boss": -1}
             spoiler_locations.sort(key=lambda item: sort_order.get(item.type, 1))
-            self.locations[world.id] = OrderedDict([(str(location), location.item) for location in spoiler_locations])
+            self.locations[0] = OrderedDict([(str(location), location.item) for location in spoiler_locations])
 
         entrance_sort_order = {"OwlDrop": 0, "Overworld": -1, "Dungeon": -2, "SpecialInterior": -3, "Interior": -3, "Grotto": -4, "Grave": -4, "SpecialGrave": -4}
         for (sphere_nr, sphere) in self.entrance_playthrough.items():
             sorted_sphere = [entrance for entrance in sphere]
             sorted_sphere.sort(key=lambda entrance: entrance_sort_order.get(entrance.type, 1))
             sorted_sphere.sort(key=lambda entrance: entrance.name)
-            sorted_sphere.sort(key=lambda entrance: entrance.world.id)
+            sorted_sphere.sort(key=lambda entrance: 0)
             self.entrance_playthrough[sphere_nr] = sorted_sphere
 
         self.entrances = {}
@@ -86,4 +86,4 @@ class Spoiler(object):
             spoiler_entrances = [entrance for entrance in world.get_entrances() if entrance.shuffled and entrance.primary]
             spoiler_entrances.sort(key=lambda entrance: entrance.name)
             spoiler_entrances.sort(key=lambda entrance: entrance_sort_order.get(entrance.type, 1))
-            self.entrances[world.id] = spoiler_entrances
+            self.entrances[0] = spoiler_entrances

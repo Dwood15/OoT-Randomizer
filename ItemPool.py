@@ -739,20 +739,20 @@ def generate_itempool(world):
     fixed_locations = list(filter(lambda loc: loc.name in fixedlocations, world.get_locations()))
     for location in fixed_locations:
         item = fixedlocations[location.name]
-        world.push_item(location, ItemFactory(item, world.id))
+        world.push_item(location, ItemFactory(item, 0))
         location.locked = True
 
     drop_locations = list(filter(lambda loc: loc.type == 'Drop', world.get_locations()))
     for drop_location in drop_locations:
         item = droplocations[drop_location.name]
-        world.push_item(drop_location, ItemFactory(item, world.id))
+        world.push_item(drop_location, ItemFactory(item, 0))
         drop_location.locked = True
 
     # set up item pool
     (pool, placed_items) = get_pool_core(world)
-    world.itempool = ItemFactory(pool, world.id)
+    world.itempool = ItemFactory(pool, 0)
     for (location, item) in placed_items.items():
-        world.push_item(location, ItemFactory(item, world_id=world.id))
+        world.push_item(location, ItemFactory(item, world_id=0))
         world.get_location(location).locked = True
 
     world.distribution.set_complete_itempool(world.itempool)
@@ -1185,9 +1185,9 @@ def get_pool_core(world):
         # We can resolve this by starting with some extra keys
         if world.dungeon_mq['Spirit Temple']:
             # Yes somehow you need 3 keys. This dungeon is bonkers
-            world.state.collect(ItemFactory('Small Key (Spirit Temple)', world.id))
-            world.state.collect(ItemFactory('Small Key (Spirit Temple)', world.id))
-            world.state.collect(ItemFactory('Small Key (Spirit Temple)', world.id))
+            world.state.collect(ItemFactory('Small Key (Spirit Temple)', 0))
+            world.state.collect(ItemFactory('Small Key (Spirit Temple)', 0))
+            world.state.collect(ItemFactory('Small Key (Spirit Temple)', 0))
         #if not world.dungeon_mq['Fire Temple']:
         #    world.state.collect(ItemFactory('Small Key (Fire Temple)'))
     if world.shuffle_bosskeys == 'vanilla':
@@ -1200,9 +1200,9 @@ def get_pool_core(world):
 
 
     if not world.keysanity and not world.dungeon_mq['Fire Temple']:
-        world.state.collect(ItemFactory('Small Key (Fire Temple)', world.id))
+        world.state.collect(ItemFactory('Small Key (Fire Temple)', 0))
     if not world.dungeon_mq['Water Temple']:
-        world.state.collect(ItemFactory('Small Key (Water Temple)', world.id))
+        world.state.collect(ItemFactory('Small Key (Water Temple)', 0))
 
     if world.triforce_hunt:
         trifroce_count = int(world.triforce_goal_per_world * TriforceCounts[world.item_pool_value])

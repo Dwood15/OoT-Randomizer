@@ -34,6 +34,7 @@ class World(object):
         self.maximum_wallets = 0
         self.light_arrow_location = None
         self.triforce_count = 0
+        self.empty_areas = {}
 
         self.parser = Rule_AST_Transformer(self)
 
@@ -531,7 +532,7 @@ class World(object):
         duplicate_item_woth = {}
         woth_loc = [location for world_woth in spoiler.required_locations.values() for location in world_woth]
         for world in spoiler.worlds:
-            duplicate_item_woth[world.id] = {}
+            duplicate_item_woth[0] = {}
         for location in woth_loc:
             world_id = location.item.world_id
             item = location.item
@@ -554,7 +555,6 @@ class World(object):
             duplicate_item_woth[world_id][item_name].append(location)
 
         # generate the empty area list
-        self.empty_areas = {}
 
         for area,area_info in areas.items():
             useless_area = True

@@ -34,7 +34,7 @@ class Location(object):
             elif world_id is not None:
                 self.world_id = world_id
             else:
-                self.world_id = world.id
+                self.world_id = 0
 
     def copy(self, new_region):
         new_location = Location(self.name, self.address, self.address2, self.default, self.type, self.scene, new_region, self.filter_tags, world_id=self.world_id)

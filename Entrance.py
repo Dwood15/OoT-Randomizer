@@ -1,4 +1,5 @@
 from Location import Location
+from Region import Region
 
 
 class Entrance(object):
@@ -58,7 +59,7 @@ class Entrance(object):
         if root_exit is None:
             raise Exception("root_exit must not be none")
 
-        if not isinstance(root_exit, Entrance) and not isinstance(root_exit, Location):
+        if not isinstance(root_exit, Entrance) and not isinstance(root_exit, Location) and not isinstance(root_exit, Region):
             raise Exception("root_exit must not be instance of a WORLD")
 
         if not self.assumed:

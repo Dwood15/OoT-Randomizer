@@ -395,7 +395,7 @@ class WorldDistribution(object):
         for (name, record) in self.starting_items.items():
             for _ in range(record.count):
                 try:
-                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name, world.id)
+                    item = ItemFactory("Bottle" if name == "Bottle with Milk (Half)" else name, 0)
                 except KeyError:
                     continue
                 world.state.collect(item)
@@ -481,9 +481,9 @@ class WorldDistribution(object):
                 try:
                     location = LocationFactory(name)
                 except KeyError:
-                    raise RuntimeError('Unknown boss in world %d: %s' % (world.id + 1, name))
+                    raise RuntimeError('Unknown boss in world %d: %s' % (0 + 1, name))
                 if location.type == 'Boss':
-                    raise RuntimeError('Boss or already placed in world %d: %s' % (world.id + 1, name))
+                    raise RuntimeError('Boss or already placed in world %d: %s' % (0 + 1, name))
                 else:
                     continue
             if record.player is not None and (record.player - 1) != self.id:
@@ -493,9 +493,9 @@ class WorldDistribution(object):
                 if record.item not in item_groups['DungeonReward']:
                     raise RuntimeError('Cannot place non-dungeon reward %s in world %d on location %s.' % (record.item, self.id + 1, name))
                 if IsItem(record.item):
-                    raise RuntimeError('Reward already placed in world %d: %s' % (world.id + 1, record.item))
+                    raise RuntimeError('Reward already placed in world %d: %s' % (0 + 1, record.item))
                 else:
-                    raise RuntimeError('Reward unknown in world %d: %s' % (world.id + 1, record.item))
+                    raise RuntimeError('Reward unknown in world %d: %s' % (0 + 1, record.item))
             count += 1
             world.push_item(boss, reward, True)
         return count
@@ -535,7 +535,7 @@ class WorldDistribution(object):
                         self.item_pool[item.name] = ItemPoolRecord({'type': 'set', 'count': 1})
                     else:
                         self.item_pool[item.name].count += 1
-                    item_pools[5].append(ItemFactory(item.name, world.id))
+                    item_pools[5].append(ItemFactory(item.name, 0))
         for (location_name, record) in pattern_dict_items(locations, world.itempool, []):
             if record.item is None:
                 continue
@@ -548,7 +548,7 @@ class WorldDistribution(object):
                 try:
                     location = LocationFactory(location_name, world)
                 except KeyError:
-                    raise RuntimeError('Unknown location in world %d: %s' % (world.id + 1, location_name))
+                    raise RuntimeError('Unknown location in world %d: %s' % (0 + 1, location_name))
                 if location.type == 'Boss':
                     continue
                 elif location.name in world.disabled_locations:
@@ -628,7 +628,7 @@ class WorldDistribution(object):
             try:
                 location = LocationFactory(name)
             except KeyError:
-                raise RuntimeError('Unknown location in world %d: %s' % (world.id + 1, name))
+                raise RuntimeError('Unknown location in world %d: %s' % (0 + 1, name))
             if location.type == 'Boss':
                 continue
 
@@ -817,14 +817,14 @@ class Distribution(object):
         spoiler.parse_data()
 
         for world in spoiler.worlds:
-            world_dist = self.world_dists[world.id]
+            world_dist = self.world_dists[0]
             world_dist.dungeons = {dung: DungeonRecord({ 'mq': world.dungeon_mq[dung] }) for dung in world.dungeon_mq}
             world_dist.trials = {trial: TrialRecord({ 'active': not world.skipped_trials[trial] }) for trial in world.skipped_trials}
-            world_dist.entrances = {ent.name: EntranceRecord.from_entrance(ent) for ent in spoiler.entrances[world.id]}
-            world_dist.locations = {loc: LocationRecord.from_item(item, world.settings) for (loc, item) in spoiler.locations[world.id].items()}
-            world_dist.woth_locations = {loc.name: LocationRecord.from_item(loc.item, world.settings) for loc in spoiler.required_locations[world.id]}
+            world_dist.entrances = {ent.name: EntranceRecord.from_entrance(ent) for ent in spoiler.entrances[0]}
+            world_dist.locations = {loc: LocationRecord.from_item(item, world.settings) for (loc, item) in spoiler.locations[0].items()}
+            world_dist.woth_locations = {loc.name: LocationRecord.from_item(loc.item, world.settings) for loc in spoiler.required_locations[0]}
             world_dist.barren_regions = [*world.empty_areas]
-            world_dist.gossip_stones = {gossipLocations[loc].name: GossipRecord(spoiler.hints[world.id][loc].to_json()) for loc in spoiler.hints[world.id]}
+            world_dist.gossip_stones = {gossipLocations[loc].name: GossipRecord(spoiler.hints[0][loc].to_json()) for loc in spoiler.hints[0]}
 
         self.playthrough = {}
         for (sphere_nr, sphere) in spoiler.playthrough.items():
@@ -832,7 +832,7 @@ class Distribution(object):
             self.playthrough[sphere_nr] = loc_rec_sphere
             for location in sphere:
                 if spoiler.settings.world_count > 1:
-                    location_key = '%s [W%d]' % (location.name, location.world.id + 1)
+                    location_key = '%s [W%d]' % (location.name, 0 + 1)
                 else:
                     location_key = location.name
 
@@ -845,7 +845,7 @@ class Distribution(object):
                 self.entrance_playthrough[sphere_nr] = ent_rec_sphere
                 for entrance in sphere:
                     if spoiler.settings.world_count > 1:
-                        entrance_key = '%s [W%d]' % (entrance.name, entrance.world.id + 1)
+                        entrance_key = '%s [W%d]' % (entrance.name, 0 + 1)
                     else:
                         entrance_key = entrance.name
 

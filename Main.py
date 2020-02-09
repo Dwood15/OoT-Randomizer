@@ -14,7 +14,6 @@ from Cosmetics import patch_cosmetics
 from DungeonList import create_dungeons
 from EntranceShuffle import set_entrances
 from Fill import distribute_items_restrictive, ShuffleError
-from Hints import buildGossipHints
 from Item import Item
 from ItemPool import generate_itempool
 from LocationList import set_drop_location_names
@@ -149,7 +148,6 @@ def generate(settings, window):
         window.update_status('Calculating Hint Data')
         logger.info('Calculating hint data.')
         State.update_required_items(spoiler)
-        buildGossipHints(spoiler, world)
         window.update_progress(55)
     spoiler.build_file_hash()
     return spoiler
@@ -406,7 +404,7 @@ def create_playthrough(spoiler):
 
     search = RewindableSearch([world.state], root_region=world.get_root_exits(), world=world)
     # Get all item locations in the worlds
-    item_locations = search.progression_locations()
+    item_locations = search.progression_locations(world=world)
     # Omit certain items from the playthrough
     internal_locations = {location for location in item_locations if location.internal}
     # Generate a list of spheres by iterating over reachable locations without collecting as we go.
@@ -457,13 +455,15 @@ def create_playthrough(spoiler):
             location.item = None
 
             # An item can only be required if it isn't already obtained or if it's progressive
-            if search.state_list[old_item.world_id].item_count(old_item.name) < old_item.special.get('progressive', 1):
-                # Test whether the game is still beatable from here.
-                logger.debug('Checking if %s is required to beat the game.', old_item.name)
-                if not search.can_beat_game():
-                    # still required, so reset the item
-                    location.item = old_item
-                    required_locations.append(location)
+            if not search.state_list[old_item.world_id].item_count(old_item.name) < old_item.special.get('progressive', 1):
+                continue
+
+            # Test whether the game is still beatable from here.
+            logger.debug('Checking if %s is required to beat the game.', old_item.name)
+            if not search.can_beat_game(world=world):
+                # still required, so reset the item
+                location.item = old_item
+                required_locations.append(location)
 
     # Reduce each entrance sphere in reverse order, by checking if the game is beatable when we disconnect the entrance.
     required_entrances = []

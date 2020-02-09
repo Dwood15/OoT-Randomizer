@@ -1,4 +1,5 @@
 import copy
+import logging
 from collections import defaultdict
 import itertools
 
@@ -30,18 +31,17 @@ class Search(object):
             if root_region is None:
                 raise Exception("ROOT REGION IS NONE")
 
-            root_regions = [ root_region ]
             # The cache is a dict with 5 values:
             #  child_regions, adult_regions: maps of Region -> tod, all the regions in that sphere
             #    values are lazily-determined tod flags (see TimeOfDay).
             #  child_queue, adult_queue: queue of Entrance, all the exits to try next sphere
             #  visited_locations: set of Locations visited in or before that sphere.
             self._cache = {
-                'child_queue': list(exit for region in root_regions for exit in region.exits),
-                'adult_queue': list(exit for region in root_regions for exit in region.exits),
+                'child_queue': list(exit for exit in root_region.exits),
+                'adult_queue': list(exit for exit in root_region.exits),
                 'visited_locations': set(),
-                'child_regions': {region: TimeOfDay.NONE for region in root_regions},
-                'adult_regions': {region: TimeOfDay.NONE for region in root_regions},
+                'child_regions': {root_region: TimeOfDay.NONE},
+                'adult_regions': {root_region: TimeOfDay.NONE},
             }
             self.cached_spheres = [self._cache]
             self.next_sphere()
@@ -118,25 +118,37 @@ class Search(object):
             raise Exception("world must not be none")
         else:
             world = self._world
+
+        logger = logging.getLogger('')
         failed = []
         for exit in exit_queue:
-            if exit.connected_region and exit.connected_region not in regions:
-                # Evaluate the access rule directly, without tod
-                acc_rule = exit.access_rule
+            if not exit.connected_region or exit.connected_region in regions:
+                continue
 
-                if not acc_rule(self.state_list[0], spot=exit, age=age, world=world):
-                    failed.append(exit)
-                    continue
+            # Evaluate the access rule directly, without tod
+            acc_rule = exit.access_rule
 
-                regions[exit.connected_region] = exit.connected_region.provides_time
-                root_rgn = world.get_root_region()
+            if not acc_rule(self.state_list[0], spot=exit, age=age, world=world):
+                failed.append(exit)
+                continue
 
-                regions[root_rgn] |= exit.connected_region.provides_time
-                exit_queue.extend(exit.connected_region.exits)
+            regions[exit.connected_region] = exit.connected_region.provides_time
+            root_rgn = world.get_root_region()
+
+            if root_rgn not in regions:
+                logger.warning("whhoop root_region doesn't exist in the regions list")
+                regions[root_rgn] = 0
+
+            reg_val = regions[root_rgn]
+            reg_val |= exit.connected_region.provides_time
+            regions[root_rgn] = reg_val
+
+            exit_queue.extend(exit.connected_region.exits)
         return failed
 
 
     def _expand_tod_regions(self, regions, goal_region, age, tod):
+
         # grab all the exits from the regions with the given tod in the same world as our goal.
         # we want those that go to existing regions without the tod, until we reach the goal.
         has_tod_world = lambda regtod: regtod[1] & tod
@@ -145,7 +157,7 @@ class Search(object):
             # We don't look for new regions, just spreading the tod to our existing regions
             if exit.connected_region in regions and tod & ~regions[exit.connected_region]:
                 # Evaluate the access rule directly
-                if exit.access_rule(self.state_list[exit.world.id], spot=exit, age=age, tod=tod):
+                if exit.access_rule(self.state_list[0], spot=exit, age=age, tod=tod, world=self._world):
                     regions[exit.connected_region] |= tod
                     if exit.connected_region == goal_region:
                         return True

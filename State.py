@@ -88,7 +88,7 @@ class State(object):
 
     # Used for fall damage and other situations where damage is unavoidable
     def can_live_dmg(self, hearts):
-        mult = self.world.damage_multiplier
+        mult = self._world.damage_multiplier
         if hearts*4 >= 3:
             return mult != 'ohko' and mult != 'quadruple'
         elif hearts*4 < 3:
@@ -99,7 +99,7 @@ class State(object):
 
     # Use the guarantee_hint rule defined in json.
     def guarantee_hint(self):
-        return self.world.parser.parse_rule('guarantee_hint')(self)
+        return self._world.parser.parse_rule('guarantee_hint')(self)
 
 
     # Be careful using this function. It will not collect any
@@ -153,7 +153,7 @@ class State(object):
 
         required_locations = []
 
-        search = Search([world.state for world in worlds])
+        search = Search([world.state for world in worlds], world=world, root_region=world.get_root_exits())
         for location in search.iter_reachable_locations(all_locations):
             # Try to remove items one at a time and see if the game is still beatable
             if location in item_locations:
@@ -161,12 +161,12 @@ class State(object):
                 location.item = None
                 # copies state! This is very important as we're in the middle of a search
                 # already, but beneficially, has search it can start from
-                if not search.can_beat_game():
+                if not search.can_beat_game(world=world):
                     required_locations.append(location)
                 location.item = old_item
             search.state_list[location.item.world_id].collect(location.item)
 
         # Filter the required location to only include location in the world
         required_locations_dict = {}
-        required_locations_dict[world.id] = list(filter(lambda location: location.world_id == world.id, required_locations))
+        required_locations_dict[0] = list(filter(lambda location: location.world_id == 0, required_locations))
         spoiler.required_locations = required_locations_dict

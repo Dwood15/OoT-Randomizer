@@ -37,10 +37,16 @@ def set_shuffled_entrance(world, name, data, type):
 
 def assume_pool_reachable(world, entrance_pool):
     assumed_pool = []
+
+    if world is None:
+        raise Exception("world should never be None, but it is anyway")
+
     for entrance in entrance_pool:
-        assumed_forward = entrance.assume_reachable()
-        if entrance.reverse != None:
-            assumed_return = entrance.reverse.assume_reachable()
+        root_exit = world.get_root_exits()
+
+        assumed_forward = entrance.assume_reachable(root_exit)
+        if entrance.reverse:
+            assumed_return = entrance.reverse.assume_reachable(root_exit)
             if entrance.type in ('Dungeon', 'Interior', 'Grotto', 'Grave', 'SpecialGrave'):
                 # Dungeon, Grotto/Grave and Simple Interior exits shouldn't be assumed to be able to give access to their parent region
                 assumed_return.set_rule(lambda state, **kwargs: False)
@@ -316,7 +322,7 @@ def shuffle_random_entrances(world):
 
     # Store all locations reachable before shuffling to differentiate which locations were already unreachable from those we made unreachable
     complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
-    max_search = Search.max_explore([world.state], complete_itempool)
+    max_search = Search.max_explore([world.state], complete_itempool, world)
 
     non_drop_locations = [location for location in world.get_locations() if location.type not in ('Drop', 'Event')]
     max_search.visit_locations(non_drop_locations)
@@ -403,7 +409,7 @@ def shuffle_random_entrances(world):
     # Check that all shuffled entrances are properly connected to a region
     for entrance in world.get_shuffled_entrances():
         if entrance.connected_region == None:
-            logging.getLogger('').error('%s was shuffled but still isn\'t connected to any region [World %d]', entrance, world.id)
+            logging.getLogger('').error('%s was shuffled but still isn\'t connected to any region [World %d]', entrance, 0)
 
     # Check for game beatability in all worlds
     if not max_search.can_beat_game(False):
@@ -447,10 +453,10 @@ def shuffle_entrance_pool(world, entrance_pool, target_entrances, locations_to_e
         except EntranceShuffleError as error:
             for entrance, target in rollbacks:
                 restore_connections(entrance, target)
-            logging.getLogger('').info('Failed to place all entrances in a pool for world %d. Will retry %d more times', entrance_pool[0].world.id, retry_count)
+            logging.getLogger('').info('Failed to place all entrances in a pool for world %d. Will retry %d more times', 0, retry_count)
             logging.getLogger('').info('\t%s' % error)
 
-    raise EntranceShuffleError('Entrance placement attempt count exceeded for world %d' % entrance_pool[0].world.id)
+    raise EntranceShuffleError('Entrance placement attempt count exceeded for world %d' % 0)
 
 
 # Split entrances based on their requirements to figure out how each entrance should be handled when shuffling them
@@ -469,7 +475,7 @@ def split_entrances_by_requirements(world, entrances_to_split, assumed_entrances
     # Generate the states with all assumed entrances disconnected
     # This ensures no assumed entrances corresponding to those we are shuffling are required in order for an entrance to be reachable as some age/tod
     complete_itempool = [item for item in world.get_itempool_with_dungeon_items()]
-    max_search = Search.max_explore([world.state], complete_itempool)
+    max_search = Search.max_explore([world.state], complete_itempool, world)
 
     restrictive_entrances = []
     soft_entrances = []
@@ -515,7 +521,7 @@ def shuffle_entrances(world, entrances, target_entrances, rollbacks, locations_t
             # An entrance shouldn't be connected to its own scene, so we fail in that situation
             if entrance.parent_region.scene and entrance.parent_region.scene == target.connected_region.scene:
                 logging.getLogger('').debug('Failed to connect %s To %s (Reason: Self scene connections are forbidden) [World %d]',
-                                            entrance, target.connected_region, entrance.world.id)
+                                            entrance, target.connected_region, 0)
                 continue
 
             change_connections(entrance, target)
@@ -527,11 +533,11 @@ def shuffle_entrances(world, entrances, target_entrances, rollbacks, locations_t
             except EntranceShuffleError as error:
                 # If the entrance can't be placed there, log a debug message and change the connections back to what they were previously
                 logging.getLogger('').debug('Failed to connect %s To %s (Reason: %s) [World %d]',
-                                            entrance, entrance.connected_region, error, entrance.world.id)
+                                            entrance, entrance.connected_region, error,0)
                 restore_connections(entrance, target)
 
         if entrance.connected_region == None:
-            raise EntranceShuffleError('No more valid entrances to replace with %s in world %d' % (entrance, entrance.world.id))
+            raise EntranceShuffleError('No more valid entrances to replace with %s in world %d' % (entrance, 0))
 
 
 # Validate the provided worlds' structures, raising an error if it's not valid based on our criterias
@@ -542,7 +548,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
     max_search = None
 
     if locations_to_ensure_reachable:
-        max_search = Search.max_explore([world.state], itempool)
+        max_search = Search.max_explore([world.state], itempool, world)
         # If ALR is enabled, ensure all locations we want to keep reachable are indeed still reachable
         # Otherwise, just continue if the game is still beatable
         if not (world.settings.check_beatable_only and max_search.can_beat_game(False)):
@@ -551,10 +557,12 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
                 if not max_search.visited(location):
                     raise EntranceShuffleError('%s is unreachable' % location.name)
 
-    if (entrance_placed == None and world.settings.shuffle_special_indoor_entrances) or \
-       (entrance_placed != None and entrance_placed.type in ['SpecialInterior', 'Overworld']):
+    none_ent_placed = entrance_placed == None
+
+    if (none_ent_placed and world.settings.shuffle_special_indoor_entrances) or \
+       (not none_ent_placed and entrance_placed.type in ['SpecialInterior', 'Overworld']):
         if max_search == None:
-            max_search = Search.max_explore([world.state], itempool)
+            max_search = Search.max_explore([world.state], itempool, world)
 
         # Links House entrance should be reachable as child at some point in the seed
         links_house_entrance = get_entrance_replacing(world.get_region('Links House'), 'Kokiri Forest -> Links House')
@@ -593,7 +601,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
             raise EntranceShuffleError('Invalid starting area')
 
         # Check that a region where time passes is always reachable as both ages without having collected any items (except in closed forest)
-        time_travel_search = Search.with_items([world.state], [ItemFactory('Time Travel', world_id=world.id)])
+        time_travel_search = Search.with_items([world.state], [ItemFactory('Time Travel', world_id=0)])
 
         if not (any(region for region in time_travel_search.reachable_regions('child') if region.time_passes and region.world == world) and
                 any(region for region in time_travel_search.reachable_regions('adult') if region.time_passes and region.world == world)):
@@ -609,7 +617,7 @@ def validate_worlds(world, entrance_placed, locations_to_ensure_reachable, itemp
         # The Big Poe Shop should always be accessible as adult without the need to use any bottles
         # Since we can't guarantee that items in the pool won't be placed behind bottles, we guarantee the access without using any items
         # This is important to ensure that players can never lock their only bottles by filling them with Big Poes they can't sell
-        no_items_time_travel_search = Search.with_items([State(world)], [ItemFactory('Time Travel', world_id=world.id)])
+        no_items_time_travel_search = Search.with_items([State(world)], [ItemFactory('Time Travel', world_id=0)], world)
 
         if not no_items_time_travel_search.can_reach(world.get_region('Castle Town Rupee Room'), age='adult'):
             raise EntranceShuffleError('Big Poe Shop access is not guaranteed as adult')
@@ -658,11 +666,11 @@ def restore_connections(entrance, target_entrance):
 # Confirm the replacement of a target entrance by a new entrance, logging the new connections and completely deleting the target entrances
 def confirm_replacement(entrance, target_entrance):
     delete_target_entrance(target_entrance)
-    logging.getLogger('').debug('Connected %s To %s [World %d]', entrance, entrance.connected_region, entrance.world.id)
+    logging.getLogger('').debug('Connected %s To %s [World %d]', entrance, entrance.connected_region, 0)
     if entrance.reverse:
         replaced_reverse = target_entrance.replaces.reverse
         delete_target_entrance(entrance.reverse.assumed)
-        logging.getLogger('').debug('Connected %s To %s [World %d]', replaced_reverse, replaced_reverse.connected_region, replaced_reverse.world.id)
+        logging.getLogger('').debug('Connected %s To %s [World %d]', replaced_reverse, replaced_reverse.connected_region, 0)
 
 
 # Delete an assumed target entrance, by disconnecting it if needed and removing it from its parent region
