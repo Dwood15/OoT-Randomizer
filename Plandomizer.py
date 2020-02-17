@@ -302,19 +302,13 @@ class WorldDistribution(object):
 
 
     def configure_starting_items_settings(self, world):
-        if world.start_with_wallet:
-            self.give_item('Progressive Wallet', 3)
         if world.start_with_rupees:
             self.give_item('Rupees', 999)
-        if world.start_with_deku_equipment:
+        if world.start_with_consumables:
             if world.shopsanity == "off":
                 self.give_item('Deku Shield')
             self.give_item('Deku Sticks', 99)
             self.give_item('Deku Nuts', 99)
-        if world.start_with_fast_travel:
-            self.give_item('Prelude of Light')
-            self.give_item('Serenade of Water')
-            self.give_item('Farores Wind')
 
 
     def pool_remove_item(self, pools, item_name, count, world_id=None, use_base_pool=True, ignore_pools=None):
@@ -514,7 +508,7 @@ class WorldDistribution(object):
                 try:
                     location = LocationFactory(name)
                 except KeyError:
-                    raise RuntimeError('Unknown boss in world %d: %s' % (world.id + 1, name))
+                    raise RuntimeError('Unknown location in world %d: %s' % (world.id + 1, name))
                 if location.type == 'Boss':
                     raise RuntimeError('Boss or already placed in world %d: %s' % (world.id + 1, name))
                 else:
@@ -591,7 +585,7 @@ class WorldDistribution(object):
 
             player_id = self.id if record.player is None else record.player - 1
 
-            location_matcher = lambda loc: loc.world.id == world.id and loc.name == location_name
+            location_matcher = lambda loc: loc.world.id == world.id and loc.name.lower() == location_name.lower()
             location = pull_first_element(location_pools, location_matcher)
             if location is None:
                 try:
@@ -662,6 +656,14 @@ class WorldDistribution(object):
                         item = self.pool_replace_item(item_pools, "#AdultTrade", player_id, record.item, worlds)
                     except KeyError:
                         raise RuntimeError('Too many adult trade items were added to world %d, and not enough adult trade items are available in the item pool to be removed.' % (self.id + 1))
+                elif record.item == "Weird Egg":
+                    # If Letter has not been shown to guard before obtaining a second weird egg a softlock can occur
+                    # if there are important items at deku theater or an important location locked behind the gate
+                    # or if Keaton Mask gets overwritten before giving it to the guard.
+                    try:
+                        item = self.pool_replace_item(item_pools, "Weird Egg", player_id, record.item, worlds)
+                    except KeyError:
+                        raise RuntimeError('Weird Egg already placed in World %d.' % (self.id + 1))
                 else:
                     try:
                         item = self.pool_replace_item(item_pools, "#Junk", player_id, record.item, worlds)

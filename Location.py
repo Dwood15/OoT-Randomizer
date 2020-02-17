@@ -113,11 +113,15 @@ def LocationFactory(locations, world=None):
         singleton = True
     for location in locations:
         if location in location_table:
-            type, scene, default, addresses, filter_tags = location_table[location]
+            match_location = location
+        else:
+            match_location = next(filter(lambda k: k.lower() == location.lower(), location_table), None)
+        if match_location:
+            type, scene, default, addresses, filter_tags = location_table[match_location]
             if addresses is None:
                 addresses = (None, None)
             address, address2 = addresses
-            ret.append(Location(location, address, address2, default, type, scene, filter_tags=filter_tags))
+            ret.append(Location(match_location, address, address2, default, type, scene, filter_tags=filter_tags))
         else:
             raise KeyError('Unknown Location: %s', location)
 
