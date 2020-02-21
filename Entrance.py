@@ -18,6 +18,9 @@ class Entrance(object):
         self.data = None
         self.primary = False
 
+        self.rule_string = ''
+        self.ez_canaccess = False
+
 
     def copy(self, new_region):
         new_entrance = Entrance(self.name, new_region)
@@ -32,8 +35,20 @@ class Entrance(object):
         new_entrance.data = self.data
         new_entrance.primary = self.primary
 
+        new_entrance.rule_string = self.rule_string
+        new_entrance.ez_canaccess = self.ez_canaccess
+
         return new_entrance
 
+    def can_access(self, search, age):
+        if self.ez_canaccess:
+            return True
+
+        if self.rule_string == 'True':
+            self.ez_canaccess = True
+            return True
+
+        return self.access_rule(search.state_list[self.world.id], spot=self, age=age)
 
     def add_rule(self, lambda_rule):
         self.access_rules.append(lambda_rule)

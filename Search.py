@@ -145,6 +145,16 @@ class Search(object):
         })
         return self._cache['child_regions'], self._cache['adult_regions'], self._cache['visited_locations']
 
+    def access_helper(self, loc, age):
+        return loc.can_access(self, age)
+
+    def can_visit_loc(self, loc, child_regs, adult_regs):
+        if loc.parent_region in adult_regs and self.access_helper(loc, 'adult'):
+            return True
+        if loc.parent_region in child_regs and self.access_helper(loc, 'child'):
+            return True
+        return False
+
     # Yields every reachable location, by iteratively deepening explored sets of
     # regions (one as child, one as adult) and invoking access rules.
     # item_locations is a list of Location objects from state_list that the caller
@@ -155,6 +165,7 @@ class Search(object):
     # using internal State (recommended to just call search.collect).
     def iter_reachable_locations(self, item_locations):
         had_reachable_locations = True
+
         # will loop as long as any visits were made, and at least once
         while had_reachable_locations:
             child_regions, adult_regions, visited_locations = self.next_sphere()
@@ -163,14 +174,11 @@ class Search(object):
             # and check if they can be reached. Collect them.
             had_reachable_locations = False
             for loc in item_locations:
-                if (loc not in visited_locations
-                    # Check adult first; it's the most likely.
-                    and (loc.parent_region in adult_regions
-                         and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='adult')
-                         or (loc.parent_region in child_regions
-                             and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='child')))):
+                if loc in visited_locations:
+                    continue
+
+                if self.can_visit_loc(loc, child_regions, adult_regions):
                     had_reachable_locations = True
-                    # Mark it visited for this algorithm
                     visited_locations.add(loc)
                     yield loc
 
