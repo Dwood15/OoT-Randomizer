@@ -25,7 +25,7 @@ class Location(object):
         self.world = None
         self.disabled = DisableType.ENABLED
 
-        self.rule_string = ''
+        self._rule_string = ''
         self.ez_canaccess = False
 
         if filter_tags is None:
@@ -49,16 +49,21 @@ class Location(object):
         new_location.disabled = self.disabled
 
         new_location.rule_string = self.rule_string
-        new_location.ez_canaccess = self.ez_canaccess
 
         return new_location
 
+    @property
+    def rule_string(self):
+        return self._rule_string
+
+    @rule_string.setter
+    def rule_string(self, value):
+        self._rule_string = value
+        self.ez_canaccess = value == 'True'
+
+
     def can_access(self, search, age):
         if self.ez_canaccess:
-            return True
-
-        if self.rule_string == 'True':
-            self.ez_canaccess = True
             return True
 
         return self.access_rule(search.state_list[self.world.id], spot=self, age=age)

@@ -18,7 +18,7 @@ class Entrance(object):
         self.data = None
         self.primary = False
 
-        self.rule_string = ''
+        self._rule_string = ''
         self.ez_canaccess = False
 
 
@@ -36,16 +36,20 @@ class Entrance(object):
         new_entrance.primary = self.primary
 
         new_entrance.rule_string = self.rule_string
-        new_entrance.ez_canaccess = self.ez_canaccess
 
         return new_entrance
 
+    @property
+    def rule_string(self):
+        return self._rule_string
+
+    @rule_string.setter
+    def rule_string(self, value):
+        self._rule_string = value
+        self.ez_canaccess = value == 'True'
+
     def can_access(self, search, age):
         if self.ez_canaccess:
-            return True
-
-        if self.rule_string == 'True':
-            self.ez_canaccess = True
             return True
 
         return self.access_rule(search.state_list[self.world.id], spot=self, age=age)

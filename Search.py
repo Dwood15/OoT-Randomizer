@@ -9,7 +9,7 @@ class Search(object):
 
     def __init__(self, state_list, initial_cache=None):
         self.state_list = [state.copy() for state in state_list]
-
+        self._game_won = False
         # Let the states reference this search.
         for state in self.state_list:
             state.search = self
@@ -145,13 +145,10 @@ class Search(object):
         })
         return self._cache['child_regions'], self._cache['adult_regions'], self._cache['visited_locations']
 
-    def access_helper(self, loc, age):
-        return loc.can_access(self, age)
-
     def can_visit_loc(self, loc, child_regs, adult_regs):
-        if loc.parent_region in adult_regs and self.access_helper(loc, 'adult'):
+        if loc.parent_region in adult_regs and loc.can_access(self, 'adult'):
             return True
-        if loc.parent_region in child_regs and self.access_helper(loc, 'child'):
+        if loc.parent_region in child_regs and loc.can_access(self, 'child'):
             return True
         return False
 
@@ -203,6 +200,22 @@ class Search(object):
         return [location for state in self.state_list for location in state.world.get_locations() if location.item and location.item.advancement]
 
 
+    def won(self):
+        if self._game_won:
+            return self._game_won
+
+        # This currently assumed all worlds have the same win condition.
+        # This might not be true in the future
+        for state in self.state_list:
+            if state.world.triforce_hunt:
+                if not state.has('Triforce Piece', state.world.triforce_count):
+                    return False
+            elif not state.has('Triforce'):
+                return False
+
+        self._game_won = True
+        return True
+
     # This returns True if every state is beatable. It's important to ensure
     # all states beatable since items required in one world can be in another.
     # A state is beatable if it can ever collect the Triforce.
@@ -217,17 +230,8 @@ class Search(object):
     # Win condition can be a string that gets mapped to a function(state_list) here
     # or just a function(state_list)
     def can_beat_game(self, scan_for_items=True):
-
-        # This currently assumed all worlds have the same win condition.
-        # This might not be true in the future
-        def won(state):
-            if state.world.triforce_hunt:
-                return state.has('Triforce Piece', state.world.triforce_count)
-            else:
-                return state.has('Triforce')
-
         # Check if already beaten
-        if all(map(won, self.state_list)):
+        if self.won():
             return True
 
         if scan_for_items:
@@ -236,7 +240,7 @@ class Search(object):
             search = self.copy()
             search.collect_locations()
             # if every state got the Triforce, then return True
-            return all(map(won, search.state_list))
+            return search.won()
         else:
             return False
 
