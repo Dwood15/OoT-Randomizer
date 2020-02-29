@@ -16,7 +16,8 @@ ARCHIVE.bin
 *.sav
 *.spec
 .*.sw*
-
+*.c
+*.so
 tests/Output
 !tests/*.sav
 
