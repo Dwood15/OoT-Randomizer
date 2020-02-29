@@ -1,7 +1,5 @@
 import itertools
 import json
-import logging
-import re
 import random
 
 from functools import reduce
@@ -11,7 +9,7 @@ from EntranceShuffle import EntranceShuffleError, change_connections, confirm_re
 from Hints import gossipLocations, GossipText
 from Item import ItemFactory, ItemIterator, IsItem
 from ItemPool import item_groups, get_junk_item
-from Location import LocationIterator, LocationFactory, IsLocation
+from Location import LocationIterator, LocationFactory
 from LocationList import location_groups
 from Search import Search
 from Spoiler import HASH_ICONS

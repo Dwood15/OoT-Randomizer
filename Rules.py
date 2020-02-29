@@ -1,4 +1,3 @@
-import collections
 import logging
 from Location import DisableType
 from Search import Search
