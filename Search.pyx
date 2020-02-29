@@ -5,6 +5,14 @@ import itertools
 from Region import TimeOfDay
 
 
+# This currently assumed all worlds have the same win condition.
+# This might not be true in the future
+def game_won(state):
+    if state.world.triforce_hunt:
+        return state.has('Triforce Piece', state.world.triforce_count)
+    else:
+        return state.has('Triforce')
+
 class Search(object):
 
     def __init__(self, state_list, initial_cache=None):
@@ -98,14 +106,16 @@ class Search(object):
     def _expand_regions(self, exit_queue, regions, age):
         failed = []
         for exit in exit_queue:
-            if exit.connected_region and exit.connected_region not in regions:
-                # Evaluate the access rule directly, without tod
-                if exit.access_rule(self.state_list[exit.world.id], spot=exit, age=age):
-                    regions[exit.connected_region] = exit.connected_region.provides_time
-                    regions[exit.world.get_region('Root')] |= exit.connected_region.provides_time
-                    exit_queue.extend(exit.connected_region.exits)
-                else:
-                    failed.append(exit)
+            if not exit.connected_region or exit.connected_region in regions:
+                continue
+            # Evaluate the access rule directly, without tod
+            if not exit.access_rule(self.state_list[exit.world.id], spot=exit, age=age):
+                failed.append(exit)
+                continue
+
+            regions[exit.connected_region] = exit.connected_region.provides_time
+            regions[exit.world.get_region('Root')] |= exit.connected_region.provides_time
+            exit_queue.extend(exit.connected_region.exits)
         return failed
 
 
@@ -116,13 +126,16 @@ class Search(object):
         exit_queue = list(itertools.chain.from_iterable(region.exits for region, _ in filter(has_tod_world, regions.items())))
         for exit in exit_queue:
             # We don't look for new regions, just spreading the tod to our existing regions
-            if exit.connected_region in regions and tod & ~regions[exit.connected_region]:
-                # Evaluate the access rule directly
-                if exit.access_rule(self.state_list[exit.world.id], spot=exit, age=age, tod=tod):
-                    regions[exit.connected_region] |= tod
-                    if exit.connected_region == goal_region:
-                        return True
-                    exit_queue.extend(exit.connected_region.exits)
+            if exit.connected_region not in regions or (not tod & ~regions[exit.connected_region]):
+                continue
+            # Evaluate the access rule directly
+            if not exit.access_rule(self.state_list[exit.world.id], spot=exit, age=age, tod=tod):
+                continue
+
+            regions[exit.connected_region] |= tod
+            if exit.connected_region == goal_region:
+                return True
+            exit_queue.extend(exit.connected_region.exits)
         return False
 
 
@@ -163,12 +176,12 @@ class Search(object):
             # and check if they can be reached. Collect them.
             had_reachable_locations = False
             for loc in item_locations:
-                if (loc not in visited_locations
-                    # Check adult first; it's the most likely.
-                    and (loc.parent_region in adult_regions
-                         and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='adult')
-                         or (loc.parent_region in child_regions
-                             and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='child')))):
+                if loc in visited_locations:
+                    continue
+
+                # Check adult first; it's the most likely.
+                if ((loc.parent_region in adult_regions and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='adult')
+                         or (loc.parent_region in child_regions and loc.access_rule(self.state_list[loc.world.id], spot=loc, age='child')))):
                     had_reachable_locations = True
                     # Mark it visited for this algorithm
                     visited_locations.add(loc)
@@ -195,6 +208,7 @@ class Search(object):
         return [location for state in self.state_list for location in state.world.get_locations() if location.item and location.item.advancement]
 
 
+
     # This returns True if every state is beatable. It's important to ensure
     # all states beatable since items required in one world can be in another.
     # A state is beatable if it can ever collect the Triforce.
@@ -209,28 +223,32 @@ class Search(object):
     # Win condition can be a string that gets mapped to a function(state_list) here
     # or just a function(state_list)
     def can_beat_game(self, scan_for_items=True):
-
-        # This currently assumed all worlds have the same win condition.
-        # This might not be true in the future
-        def won(state):
-            if state.world.triforce_hunt:
-                return state.has('Triforce Piece', state.world.triforce_count)
-            else:
-                return state.has('Triforce')
-
+        is_won = True
         # Check if already beaten
-        if all(map(won, self.state_list)):
+        for state in self.state_list:
+            if not game_won(state):
+                is_won = False
+                break
+
+        if is_won:
             return True
 
-        if scan_for_items:
-            # collect all available items
-            # make a new search since we might be iterating over one already
-            search = self.copy()
-            search.collect_locations()
-            # if every state got the Triforce, then return True
-            return all(map(won, search.state_list))
-        else:
+        if not scan_for_items:
             return False
+
+        # collect all available items
+        # make a new search since we might be iterating over one already
+        search = self.copy()
+        search.collect_locations()
+        # if every state got the Triforce, then return True
+
+        for state in search.state_list:
+            if not game_won(state):
+                return False
+
+        return True
+
+
 
     # Use the cache in the search to determine region reachability.
     # Implicitly requires is_starting_age or Time_Travel.
