@@ -1,7 +1,7 @@
 {
 "seed": "TESTTESTTEST",
 "cosmetics_only": false,
-"world_count": 3,
+"world_count": 8,
 "player_num": 1,
 "create_spoiler": true,
 "create_cosmetics_log": false,
