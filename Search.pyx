@@ -1,5 +1,4 @@
 import copy
-from collections import defaultdict
 import itertools
 
 from Region import TimeOfDay
